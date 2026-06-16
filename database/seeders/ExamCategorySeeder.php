@@ -29,6 +29,11 @@ class ExamCategorySeeder extends Seeder
                 'level' => 'professional',
             ],
             [
+                'name' => 'Clerical Ability',
+                'description' => 'Covers filing, spelling, clerical procedures, and coding.',
+                'level' => 'sub_professional',
+            ],
+            [
                 'name' => 'General Information',
                 'description' => 'Covers the Philippine Constitution, Code of Conduct for Public Officials, Peace and Human Rights, and Environmental Concepts.',
                 'level' => 'both',

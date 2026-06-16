@@ -38,7 +38,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/questions', [AdminQuestionController::class, 'index'])->name('admin.questions.index');
     Route::post('/admin/questions', [AdminQuestionController::class, 'store'])->name('admin.questions.store');
     Route::post('/admin/questions/generate-ai', [AdminQuestionController::class, 'generateAI'])->name('admin.questions.generateAI');
+    Route::post('/admin/questions/clean-duplicates', [AdminQuestionController::class, 'cleanDuplicates'])->name('admin.questions.cleanDuplicates');
+    Route::post('/admin/questions/run-audit', [AdminQuestionController::class, 'runAudit'])->name('admin.questions.runAudit');
+    Route::post('/admin/questions/reset-ai-usage', [AdminQuestionController::class, 'resetAIUsage'])->name('admin.questions.resetAIUsage');
     Route::put('/admin/questions/{question}', [AdminQuestionController::class, 'update'])->name('admin.questions.update');
+    Route::delete('/admin/questions/bulk-delete', [AdminQuestionController::class, 'bulkDestroy'])->name('admin.questions.bulkDestroy');
     Route::delete('/admin/questions/{question}', [AdminQuestionController::class, 'destroy'])->name('admin.questions.destroy');
 });
 

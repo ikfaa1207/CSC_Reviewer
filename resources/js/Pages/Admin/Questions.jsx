@@ -14,15 +14,23 @@ import {
     faBan,
     faCheck,
     faFileAlt,
-    faFilter
+    faFilter,
+    faExclamationTriangle
 } from '@fortawesome/free-solid-svg-icons';
 
 export default function Questions({ questions, categories }) {
+
     const [editingQuestion, setEditingQuestion] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [questionToDelete, setQuestionToDelete] = useState(null);
+    const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
+    const [cleanModalOpen, setCleanModalOpen] = useState(false);
+    const [showAuditIssuesOnly, setShowAuditIssuesOnly] = useState(false);
+    const [auditing, setAuditing] = useState(false);
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
 
     // Inertia Form hook for Add/Edit
     const { data, setData, post, put, reset, processing, errors, clearErrors } = useForm({
@@ -76,6 +84,17 @@ export default function Questions({ questions, categories }) {
         }
     };
 
+    const handleAILevelChange = (newLevel) => {
+        const selectedCat = categories.find(c => c.id === parseInt(aiForm.data.exam_category_id));
+        const keepCategory = selectedCat && (selectedCat.level === 'both' || selectedCat.level === newLevel);
+        
+        aiForm.setData({
+            ...aiForm.data,
+            level: newLevel,
+            exam_category_id: keepCategory ? aiForm.data.exam_category_id : ''
+        });
+    };
+
     const handleAIGenerate = (e) => {
         e.preventDefault();
         aiForm.post(route('admin.questions.generateAI'), {
@@ -102,7 +121,7 @@ export default function Questions({ questions, categories }) {
 
         setData({
             exam_category_id: question.exam_category_id,
-            question_text: question.question_text,
+            question_text: question.question_text.replace(/\s*\(Variation ID:\s*\d+\)/gi, ''),
             explanation: question.explanation || '',
             options: formOptions
         });
@@ -133,12 +152,57 @@ export default function Questions({ questions, categories }) {
         }
     };
 
-    // Filter questions based on search term and category filter
+    const handleCleanDuplicates = () => {
+        router.post(route('admin.questions.cleanDuplicates'), {}, {
+            onSuccess: () => {
+                setCleanModalOpen(false);
+            }
+        });
+    };
+
+    const handleRunAudit = () => {
+        setAuditing(true);
+        router.post(route('admin.questions.runAudit'), {}, {
+            onFinish: () => {
+                setAuditing(false);
+            }
+        });
+    };
+
+    const handleToggleSelectAll = () => {
+        if (selectedIds.length === filteredQuestions.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(filteredQuestions.map(q => q.id));
+        }
+    };
+
+    const handleBulkDelete = () => {
+        router.delete(route('admin.questions.bulkDestroy'), {
+            data: { ids: selectedIds },
+            onSuccess: () => {
+                setSelectedIds([]);
+                setBulkDeleteModalOpen(false);
+            }
+        });
+    };
+
+
+    // Filter questions based on search term, category filter, duplicates-only, and audit-issues-only
     const filteredQuestions = questions.filter(q => {
         const matchesSearch = q.question_text.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = categoryFilter === '' || q.exam_category_id === parseInt(categoryFilter);
-        return matchesSearch && matchesCategory;
+        const matchesDuplicates = !showDuplicatesOnly || q.is_duplicate;
+        const matchesAuditIssues = !showAuditIssuesOnly || (q.audit_status && q.audit_status !== 'passed');
+        return matchesSearch && matchesCategory && matchesDuplicates && matchesAuditIssues;
     });
+
+    const filteredAICategories = categories.filter(cat => {
+        return cat.level === 'both' || cat.level === aiForm.data.level;
+    });
+
+    const duplicateQuestionsCount = questions.filter(q => q.is_duplicate).length;
+    const auditIssuesQuestionsCount = questions.filter(q => q.audit_status && q.audit_status !== 'passed').length;
 
     return (
         <AuthenticatedLayout
@@ -170,10 +234,28 @@ export default function Questions({ questions, categories }) {
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
                                         Instantly generate high-quality CSE questions matching category, level, and quantity.
                                     </p>
+
+
                                     
                                     <form onSubmit={handleAIGenerate} className="space-y-4">
                                         <div>
-                                            <label htmlFor="ai_category" className="block text-xxs font-bold text-slate-700 dark:text-slate-350 uppercase tracking-wider mb-1">
+                                            <label htmlFor="ai_level" className="block text-xxs font-bold text-slate-700 dark:text-slate-355 uppercase tracking-wider mb-1">
+                                                Level
+                                            </label>
+                                            <select
+                                                id="ai_level"
+                                                value={aiForm.data.level}
+                                                onChange={(e) => handleAILevelChange(e.target.value)}
+                                                className="block w-full rounded-lg border-slate-250 bg-white px-3 py-2 text-xs text-slate-800 shadow-sm focus:border-slate-500 focus:ring-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                                                required
+                                            >
+                                                <option value="professional">Professional</option>
+                                                <option value="sub_professional">Sub-Professional</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="ai_category" className="block text-xxs font-bold text-slate-700 dark:text-slate-355 uppercase tracking-wider mb-1">
                                                 Category
                                             </label>
                                             <select
@@ -184,27 +266,11 @@ export default function Questions({ questions, categories }) {
                                                 required
                                             >
                                                 <option value="">Select Category</option>
-                                                {categories.map((cat) => (
+                                                {filteredAICategories.map((cat) => (
                                                     <option key={cat.id} value={cat.id}>
                                                         {cat.name}
                                                     </option>
                                                 ))}
-                                            </select>
-                                        </div>
-
-                                        <div>
-                                            <label htmlFor="ai_level" className="block text-xxs font-bold text-slate-700 dark:text-slate-355 uppercase tracking-wider mb-1">
-                                                Level
-                                            </label>
-                                            <select
-                                                id="ai_level"
-                                                value={aiForm.data.level}
-                                                onChange={(e) => aiForm.setData('level', e.target.value)}
-                                                className="block w-full rounded-lg border-slate-250 bg-white px-3 py-2 text-xs text-slate-800 shadow-sm focus:border-slate-500 focus:ring-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                                                required
-                                            >
-                                                <option value="professional">Professional</option>
-                                                <option value="sub_professional">Sub-Professional</option>
                                             </select>
                                         </div>
 
@@ -383,7 +449,7 @@ export default function Questions({ questions, categories }) {
                         <div className="lg:col-span-2 space-y-4">
                             
                             {/* Search and Filters panel */}
-                            <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-slate-800 dark:border-slate-700 flex flex-col sm:flex-row gap-4">
+                            <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-slate-800 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center gap-4">
                                 <div className="flex-1 relative">
                                     <input
                                         type="text"
@@ -409,15 +475,115 @@ export default function Questions({ questions, categories }) {
                                     </select>
                                     <FontAwesomeIcon icon={faFilter} className="absolute left-3 top-3 text-slate-400" />
                                 </div>
+                                {duplicateQuestionsCount > 0 && (
+                                    <div className="flex items-center gap-2 select-none shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            id="duplicates_filter"
+                                            checked={showDuplicatesOnly}
+                                            onChange={(e) => setShowDuplicatesOnly(e.target.checked)}
+                                            className="h-4 w-4 rounded border-slate-300 text-slate-950 focus:ring-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:checked:bg-slate-100"
+                                        />
+                                        <label htmlFor="duplicates_filter" className="text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer">
+                                            Duplicates Only
+                                        </label>
+                                    </div>
+                                )}
+                                <button
+                                    onClick={handleRunAudit}
+                                    disabled={auditing}
+                                    className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition shrink-0"
+                                    title="Audit all questions structurally and factually using AI"
+                                >
+                                    {auditing ? (
+                                        <>
+                                            <FontAwesomeIcon icon={faSpinner} className="animate-spin mr-1.5" />
+                                            Auditing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FontAwesomeIcon icon={faWandMagicSparkles} className="mr-1.5 text-indigo-500" />
+                                            Run Integrity Audit
+                                        </>
+                                    )}
+                                </button>
                             </div>
 
+                            {/* Duplicate Warning Banner */}
+                            {duplicateQuestionsCount > 0 && (
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 dark:bg-amber-950/20 dark:border-amber-900/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
+                                    <div className="flex items-start gap-3">
+                                        <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
+                                            <FontAwesomeIcon icon={faExclamationTriangle} className="w-4 h-4" />
+                                        </span>
+                                        <div>
+                                            <h4 className="text-sm font-bold text-amber-900 dark:text-amber-305">
+                                                Duplicate Questions Detected
+                                            </h4>
+                                            <p className="text-xs text-amber-705 dark:text-amber-450 mt-0.5 leading-relaxed">
+                                                There are <strong>{duplicateQuestionsCount}</strong> duplicate questions in the database. Cleaning them will merge duplicates and retain the oldest entry.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setCleanModalOpen(true)}
+                                        className="inline-flex items-center justify-center rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-700 transition shrink-0 animate-pulse hover:animate-none"
+                                    >
+                                        <FontAwesomeIcon icon={faTrash} className="mr-1.5 w-3 h-3" />
+                                        Auto-Clean Duplicates
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Integrity Audit Warning Banner */}
+                            {auditIssuesQuestionsCount > 0 && (
+                                <div className="bg-red-50 border border-red-200 rounded-xl p-4 dark:bg-red-950/20 dark:border-red-900/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
+                                    <div className="flex items-start gap-3">
+                                        <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 shrink-0">
+                                            <FontAwesomeIcon icon={faExclamationTriangle} className="w-4 h-4" />
+                                        </span>
+                                        <div>
+                                            <h4 className="text-sm font-bold text-red-900 dark:text-red-300">
+                                                Integrity Issues Flagged
+                                            </h4>
+                                            <p className="text-xs text-red-705 dark:text-red-450 mt-0.5 leading-relaxed">
+                                                The audit scanned the database and flagged <strong>{auditIssuesQuestionsCount}</strong> questions with structural or factual errors. Please review and correct them.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 select-none shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            id="audit_filter"
+                                            checked={showAuditIssuesOnly}
+                                            onChange={(e) => setShowAuditIssuesOnly(e.target.checked)}
+                                            className="h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500 dark:border-slate-700 dark:bg-slate-900 dark:checked:bg-red-500"
+                                        />
+                                        <label htmlFor="audit_filter" className="text-xs font-bold text-red-750 dark:text-red-400 cursor-pointer">
+                                            Filter Flagged Only
+                                        </label>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Questions Count indicator */}
-                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1">
-                                Database: {filteredQuestions.length} Questions found {searchTerm || categoryFilter ? '(filtered)' : ''}
-                            </p>
+                            <div className="flex items-center justify-between pl-1 pr-2">
+                                <p className="text-xs font-semibold text-slate-550 dark:text-slate-400 uppercase tracking-wider">
+                                    Database: {filteredQuestions.length} Questions found {searchTerm || categoryFilter ? '(filtered)' : ''}
+                                </p>
+                                {filteredQuestions.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={handleToggleSelectAll}
+                                        className="text-xxs font-extrabold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 hover:underline select-none cursor-pointer"
+                                    >
+                                        {selectedIds.length === filteredQuestions.length ? 'Deselect All' : 'Select All Filtered'}
+                                    </button>
+                                )}
+                            </div>
 
                             {/* List of Questions */}
-                            <div className="space-y-4">
+                            <div className="space-y-4 max-h-[calc(100vh-320px)] overflow-y-auto pr-2">
                                 {filteredQuestions.length === 0 ? (
                                     <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
                                         No questions in database matching filters. Use the forms on the left to create or generate questions.
@@ -431,12 +597,40 @@ export default function Questions({ questions, categories }) {
                                             {/* Header */}
                                             <div className="flex justify-between items-start border-b border-slate-100 pb-2.5 mb-3 dark:border-slate-700">
                                                 <div className="flex flex-wrap items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.includes(q.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedIds(prev => [...prev, q.id]);
+                                                            } else {
+                                                                setSelectedIds(prev => prev.filter(id => id !== q.id));
+                                                            }
+                                                        }}
+                                                        className="h-4 w-4 rounded border-slate-305 text-slate-900 focus:ring-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:checked:bg-slate-100 mr-2 cursor-pointer shrink-0"
+                                                        title="Select question"
+                                                    />
                                                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                                                         {q.category.name}
                                                     </span>
                                                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xxs font-medium bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300 uppercase">
                                                         {q.category.level === 'both' ? 'Prof & Sub-Prof' : q.category.level}
                                                     </span>
+                                                    {q.is_duplicate && (
+                                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xxs font-bold bg-amber-50 text-amber-805 dark:bg-amber-950/30 dark:text-amber-400 uppercase tracking-wider animate-pulse">
+                                                            <FontAwesomeIcon icon={faExclamationTriangle} className="w-2.5 h-2.5" />
+                                                            Duplicate
+                                                        </span>
+                                                    )}
+                                                    {q.audit_status && q.audit_status !== 'passed' && (
+                                                        <span 
+                                                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xxs font-bold bg-red-50 text-red-800 dark:bg-red-950/30 dark:text-red-400 uppercase tracking-wider animate-pulse cursor-help"
+                                                            title={q.audit_error || 'Correctness verification failed'}
+                                                        >
+                                                            <FontAwesomeIcon icon={faExclamationTriangle} className="w-2.5 h-2.5 text-red-600" />
+                                                            {q.audit_status === 'failed_structure' ? 'Structural Mismatch' : 'Factual Warning'}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="flex gap-3">
                                                     <button
@@ -459,7 +653,7 @@ export default function Questions({ questions, categories }) {
 
                                             {/* Question Text */}
                                             <p className="text-sm font-semibold text-slate-850 leading-relaxed mb-4 dark:text-slate-205 select-text whitespace-pre-line">
-                                                {q.question_text}
+                                                {q.question_text.replace(/\s*\(Variation ID:\s*\d+\)/gi, '')}
                                             </p>
 
                                             {/* Options Grid */}
@@ -467,23 +661,31 @@ export default function Questions({ questions, categories }) {
                                                 {q.options.map((opt, idx) => (
                                                     <div 
                                                         key={opt.id} 
-                                                        className={`p-2.5 text-xs border rounded-lg flex items-center gap-2 ${opt.is_correct ? 'border-slate-700 bg-slate-50 font-semibold dark:border-slate-200 dark:bg-slate-700/30 dark:text-slate-100' : 'border-slate-150 dark:border-slate-700 dark:text-slate-400'}`}
+                                                        className={`p-2.5 text-xs border rounded-lg flex items-center gap-2 ${opt.is_correct ? 'border-emerald-500 bg-emerald-50/30 font-semibold dark:border-emerald-500/30 dark:bg-emerald-950/20 dark:text-emerald-300' : 'border-slate-150 dark:border-slate-700 dark:text-slate-400'}`}
                                                     >
-                                                        <span className={`w-4 h-4 rounded text-xxs font-extrabold flex items-center justify-center shrink-0 ${opt.is_correct ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-550'}`}>
+                                                        <span className={`w-4 h-4 rounded text-xxs font-extrabold flex items-center justify-center shrink-0 ${opt.is_correct ? 'bg-emerald-600 text-white dark:bg-emerald-500' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-550'}`}>
                                                             {String.fromCharCode(65 + idx)}
                                                         </span>
                                                         <span className="truncate">{opt.option_text}</span>
                                                         {opt.is_correct && (
-                                                            <FontAwesomeIcon icon={faCheck} className="ml-auto text-slate-900 dark:text-slate-100 w-3 h-3 shrink-0" />
+                                                            <FontAwesomeIcon icon={faCheck} className="ml-auto text-emerald-600 dark:text-emerald-400 w-3 h-3 shrink-0" />
                                                         )}
                                                     </div>
                                                 ))}
                                             </div>
 
+                                            {/* Audit Error Warning Block */}
+                                            {q.audit_status && q.audit_status !== 'passed' && q.audit_error && (
+                                                <div className="bg-red-55 border border-red-200 rounded-lg px-3 py-2 text-xxs text-red-800 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-300 mb-3 flex items-center gap-1.5">
+                                                    <FontAwesomeIcon icon={faExclamationTriangle} className="text-red-600 w-3 h-3 shrink-0" />
+                                                    <span><strong>Audit Warning:</strong> {q.audit_error}</span>
+                                                </div>
+                                            )}
+
                                             {/* Explanation */}
                                             {q.explanation && (
                                                 <div className="bg-slate-50 border border-slate-150 rounded-lg px-3 py-2 text-xxs text-slate-500 dark:bg-slate-900/30 dark:border-slate-750 dark:text-slate-400">
-                                                    <span className="font-bold text-slate-700 dark:text-slate-350 block mb-0.5">Explanation:</span>
+                                                    <span className="font-bold text-slate-700 dark:text-slate-355 block mb-0.5">Explanation:</span>
                                                     {q.explanation}
                                                 </div>
                                             )}
@@ -510,6 +712,61 @@ export default function Questions({ questions, categories }) {
                 onConfirm={confirmDelete}
                 onClose={() => setDeleteModalOpen(false)}
             />
+
+            <ConfirmationModal
+                isOpen={cleanModalOpen}
+                title="Auto-Clean Duplicate Questions"
+                message="Are you sure you want to merge duplicate questions? This will permanently delete all duplicate questions, keeping only the oldest record for each. This action cannot be undone."
+                confirmLabel="Clean & Merge"
+                cancelLabel="Cancel"
+                type="danger"
+                onConfirm={handleCleanDuplicates}
+                onClose={() => setCleanModalOpen(false)}
+            />
+
+            <ConfirmationModal
+                isOpen={bulkDeleteModalOpen}
+                title="Delete Selected Questions"
+                message={`Are you sure you want to permanently delete the ${selectedIds.length} selected question(s)? This action will remove them from the database and cannot be undone.`}
+                confirmLabel="Delete Selected"
+                cancelLabel="Cancel"
+                type="danger"
+                onConfirm={handleBulkDelete}
+                onClose={() => setBulkDeleteModalOpen(false)}
+            />
+
+            {/* Floating Bulk Actions Bar */}
+            {selectedIds.length > 0 && (
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-slate-900/90 dark:bg-slate-950/95 backdrop-blur-md border border-slate-800 text-white rounded-full px-6 py-3.5 shadow-2xl flex items-center gap-6 select-none transition-all duration-350">
+                    <div className="flex items-center gap-2 shrink-0">
+                        <span className="flex h-2 w-2 relative">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                        </span>
+                        <span className="text-xs font-bold tracking-wide">
+                            {selectedIds.length} question(s) selected
+                        </span>
+                    </div>
+                    <div className="h-4 w-px bg-slate-800"></div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setBulkDeleteModalOpen(true)}
+                            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-xs font-extrabold text-white transition shadow-sm cursor-pointer"
+                        >
+                            <FontAwesomeIcon icon={faTrash} className="w-3 h-3" />
+                            Delete Selected
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedIds([])}
+                            className="px-3.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-350 transition cursor-pointer"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
         </AuthenticatedLayout>
     );
 }

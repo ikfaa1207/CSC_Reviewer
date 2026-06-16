@@ -44,16 +44,18 @@ class ExamController extends Controller
         // Filter by category if specified
         if ($request->category_id) {
             $query->where('exam_category_id', $request->category_id);
+            $limit = 20;
         } else {
             // For general levels, filter categories matching the level
             $query->whereHas('category', function ($q) use ($request) {
                 $q->where('level', 'both')
                   ->orWhere('level', $request->level);
             });
+            $limit = 150;
         }
 
-        // Fetch up to 20 random questions
-        $questions = $query->inRandomOrder()->take(20)->get();
+        // Fetch up to random questions based on limit
+        $questions = $query->inRandomOrder()->take($limit)->get();
 
         if ($questions->isEmpty()) {
             return back()->withErrors(['error' => 'No questions available for the selected level/category. Please contact an administrator to add questions.']);
@@ -63,6 +65,7 @@ class ExamController extends Controller
         $attempt = ExamAttempt::create([
             'user_id' => $user->id,
             'level' => $request->level,
+            'mode' => $request->mode,
             'status' => 'in_progress',
             'score' => 0,
             'total_questions' => $questions->count(),

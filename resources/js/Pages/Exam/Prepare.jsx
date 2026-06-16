@@ -121,7 +121,7 @@ export default function Prepare({ categories }) {
                                     onChange={(e) => setData('category_id', e.target.value)}
                                     className="block w-full rounded-lg border-slate-200 bg-white px-4 py-2.5 text-slate-800 shadow-sm focus:border-slate-500 focus:ring-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                                 >
-                                    <option value="">Full Mock Exam (All Categories)</option>
+                                    <option value="">Full Mock Exam - Test Proper (150 Questions)</option>
                                     {categories
                                         .filter(c => c.level === 'both' || c.level === data.level)
                                         .map((category) => (

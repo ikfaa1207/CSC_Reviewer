@@ -28,6 +28,8 @@ export default function Take({ attempt }) {
 
     // Timer logic
     useEffect(() => {
+        if (attempt.mode === 'review') return;
+
         // Calculate limit: 2 minutes per question
         const timeLimitSeconds = totalQuestions * 120;
         const startedAt = new Date(attempt.started_at).getTime();
@@ -169,13 +171,19 @@ export default function Take({ attempt }) {
                             </span>
                         )}
 
-                        {/* Timer */}
-                        <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg dark:bg-slate-800 dark:border-slate-700">
-                            <FontAwesomeIcon icon={faClock} className="text-slate-500 dark:text-slate-400" />
-                            <span className={`font-mono text-sm font-bold ${timeLeft !== null && timeLeft < 120 ? 'text-red-600 dark:text-red-400 animate-pulse' : 'text-slate-700 dark:text-slate-300'}`}>
-                                {formatTime(timeLeft)}
-                            </span>
-                        </div>
+                        {/* Timer / Mode Indicator */}
+                        {attempt.mode === 'review' ? (
+                            <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                                Self-Guided Review
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg dark:bg-slate-800 dark:border-slate-700">
+                                <FontAwesomeIcon icon={faClock} className="text-slate-500 dark:text-slate-400" />
+                                <span className={`font-mono text-sm font-bold ${timeLeft !== null && timeLeft < 120 ? 'text-red-600 dark:text-red-400 animate-pulse' : 'text-slate-700 dark:text-slate-300'}`}>
+                                    {formatTime(timeLeft)}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
             }
@@ -186,7 +194,7 @@ export default function Take({ attempt }) {
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     
                     {/* Main Split Layout */}
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4 items-start">
                         
                         {/* Question and Option Panel */}
                         <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-6 flex flex-col justify-between min-h-[450px] dark:bg-slate-800 dark:border-slate-700">
@@ -206,8 +214,8 @@ export default function Take({ attempt }) {
                                 </div>
 
                                 {/* Question Text */}
-                                <div className="text-slate-800 text-base leading-relaxed font-medium mb-8 dark:text-slate-100 select-none whitespace-pre-line">
-                                    {currentQuestion.question_text}
+                                <div className="text-slate-800 text-base leading-relaxed font-medium mb-8 dark:text-slate-101 select-none whitespace-pre-line">
+                                    {currentQuestion.question_text.replace(/\s*\(Variation ID:\s*\d+\)/gi, '')}
                                 </div>
 
                                 {/* Multiple Choice Options */}
@@ -268,39 +276,41 @@ export default function Take({ attempt }) {
                                     Question Map
                                 </h3>
 
-                                <div className="grid grid-cols-5 gap-2 mb-6">
-                                    {answers.map((answer, index) => {
-                                        const isCurrent = index === currentIndex;
-                                        const isAnswered = !!answer.selected_option_id;
-                                        const isFlagged = answer.is_flagged;
+                                <div className="max-h-[350px] overflow-y-auto pr-2 mb-6 scrollbar-thin">
+                                    <div className="grid grid-cols-5 gap-2">
+                                        {answers.map((answer, index) => {
+                                            const isCurrent = index === currentIndex;
+                                            const isAnswered = !!answer.selected_option_id;
+                                            const isFlagged = answer.is_flagged;
 
-                                        let btnClasses = "relative flex items-center justify-center h-10 w-full rounded-lg text-xs font-bold border transition ";
-                                        
-                                        if (isCurrent) {
-                                            btnClasses += "border-slate-900 ring-2 ring-slate-800/20 dark:border-slate-100 dark:ring-slate-100/20 ";
-                                        } else {
-                                            btnClasses += "border-slate-200 dark:border-slate-700 ";
-                                        }
+                                            let btnClasses = "relative flex items-center justify-center h-10 w-full rounded-lg text-xs font-bold border transition ";
+                                            
+                                            if (isCurrent) {
+                                                btnClasses += "border-slate-900 ring-2 ring-slate-800/20 dark:border-slate-100 dark:ring-slate-100/20 ";
+                                            } else {
+                                                btnClasses += "border-slate-200 dark:border-slate-700 ";
+                                            }
 
-                                        if (isAnswered) {
-                                            btnClasses += "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 ";
-                                        } else {
-                                            btnClasses += "bg-transparent text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700/50 ";
-                                        }
+                                            if (isAnswered) {
+                                                btnClasses += "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 ";
+                                            } else {
+                                                btnClasses += "bg-transparent text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700/50 ";
+                                            }
 
-                                        return (
-                                            <button
-                                                key={answer.id}
-                                                onClick={() => setCurrentIndex(index)}
-                                                className={btnClasses}
-                                            >
-                                                {index + 1}
-                                                {isFlagged && (
-                                                    <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-amber-500 rounded-full border border-white dark:border-slate-800" title="Flagged for review"></span>
-                                                )}
-                                            </button>
-                                        );
-                                    })}
+                                            return (
+                                                <button
+                                                    key={answer.id}
+                                                    onClick={() => setCurrentIndex(index)}
+                                                    className={btnClasses}
+                                                >
+                                                    {index + 1}
+                                                    {isFlagged && (
+                                                        <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-amber-500 rounded-full border border-white dark:border-slate-800" title="Flagged for review"></span>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
 
                                 <div className="flex flex-col gap-2 pt-4 border-t border-slate-100 dark:border-slate-700 text-xxs font-semibold text-slate-500 dark:text-slate-400">

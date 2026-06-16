@@ -13,7 +13,8 @@ import {
     faRedo,
     faLightbulb,
     faChartBar,
-    faInfoCircle
+    faInfoCircle,
+    faCheckDouble
 } from '@fortawesome/free-solid-svg-icons';
 
 export default function Results({ attempt }) {
@@ -35,6 +36,13 @@ export default function Results({ attempt }) {
             hour: '2-digit',
             minute: '2-digit',
         });
+    };
+
+    const scrollToQuestion = (index) => {
+        const element = document.getElementById(`question-card-${index}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     };
 
     return (
@@ -72,7 +80,13 @@ export default function Results({ attempt }) {
             <Head title="Exam Results Report" />
 
             <div className="py-6 sm:py-8">
-                <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    
+                    {/* Main Split Layout */}
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4 items-start">
+                        
+                        {/* Summary and Details Column */}
+                        <div className="lg:col-span-3 space-y-6">
                     
                     {/* Score summary panel */}
                     <div className="bg-white border border-slate-200 rounded-xl p-6 mb-8 dark:bg-slate-800 dark:border-slate-700 flex flex-col md:flex-row items-center gap-6 justify-between">
@@ -113,8 +127,8 @@ export default function Results({ attempt }) {
                                         {score} / {total_questions}
                                     </h3>
                                     {isPassed ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-800 dark:bg-slate-700 dark:text-slate-350">
-                                            <FontAwesomeIcon icon={faCheckCircle} className="w-3.5 h-3.5" />
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400">
+                                            <FontAwesomeIcon icon={faCheckCircle} className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                             Passed
                                         </span>
                                     ) : (
@@ -134,7 +148,7 @@ export default function Results({ attempt }) {
                         <div className="grid grid-cols-3 gap-6 md:border-l md:border-slate-150 md:pl-8 dark:border-slate-700 w-full md:w-auto">
                             <div className="text-center md:text-left">
                                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block flex items-center justify-center md:justify-start gap-1">
-                                    <FontAwesomeIcon icon={faCheck} className="text-slate-700 dark:text-slate-400 w-3 h-3" />
+                                    <FontAwesomeIcon icon={faCheck} className="text-emerald-600 dark:text-emerald-400 w-3 h-3" />
                                     Correct
                                 </span>
                                 <span className="text-xl font-bold text-slate-800 dark:text-slate-100">{score}</span>
@@ -172,7 +186,8 @@ export default function Results({ attempt }) {
                             return (
                                 <div 
                                     key={answer.id}
-                                    className="bg-white border border-slate-200 rounded-xl p-6 dark:bg-slate-800 dark:border-slate-700"
+                                    id={`question-card-${index}`}
+                                    className="bg-white border border-slate-200 rounded-xl p-6 dark:bg-slate-800 dark:border-slate-700 scroll-mt-6"
                                 >
                                     {/* Question header status */}
                                     <div className="flex justify-between items-start border-b border-slate-100 pb-3 mb-4 dark:border-slate-700">
@@ -193,8 +208,8 @@ export default function Results({ attempt }) {
                                                     Skipped
                                                 </span>
                                             ) : isCorrect ? (
-                                                <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-800 dark:bg-slate-700 dark:text-slate-355">
-                                                    <FontAwesomeIcon icon={faCheckCircle} className="w-3 h-3" />
+                                                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-400">
+                                                    <FontAwesomeIcon icon={faCheckCircle} className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                                                     Correct
                                                 </span>
                                             ) : (
@@ -207,8 +222,8 @@ export default function Results({ attempt }) {
                                     </div>
 
                                     {/* Question text */}
-                                    <p className="text-slate-850 text-sm font-semibold leading-relaxed mb-6 dark:text-slate-205 select-none whitespace-pre-line">
-                                        {question.question_text}
+                                    <p className="text-slate-855 text-sm font-semibold leading-relaxed mb-6 dark:text-slate-205 select-none whitespace-pre-line">
+                                        {question.question_text.replace(/\s*\(Variation ID:\s*\d+\)/gi, '')}
                                     </p>
 
                                     {/* Option List status */}
@@ -223,8 +238,8 @@ export default function Results({ attempt }) {
 
                                             if (isOptionCorrect) {
                                                 // Correct option
-                                                optionClass += "border-slate-800 bg-slate-50 text-slate-800 dark:border-slate-105 dark:bg-slate-700/50 dark:text-slate-100 font-semibold";
-                                                labelClass += "bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-white";
+                                                optionClass += "border-emerald-500 bg-emerald-50/30 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-950/20 dark:text-emerald-300 font-semibold";
+                                                labelClass += "bg-emerald-600 text-white border-emerald-600 dark:bg-emerald-500 dark:text-white dark:border-emerald-500";
                                             } else if (isSelected && !isCorrect) {
                                                 // User selected incorrect option
                                                 optionClass += "border-red-300 bg-red-50/50 text-red-850 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-400";
@@ -242,7 +257,7 @@ export default function Results({ attempt }) {
                                                     </span>
                                                     <span className="pt-0.5 leading-normal">{option.option_text}</span>
                                                     {isOptionCorrect && (
-                                                        <span className="ml-auto text-xxs font-bold text-slate-650 dark:text-slate-350 uppercase select-none flex items-center gap-1">
+                                                        <span className="ml-auto text-xxs font-bold text-emerald-600 dark:text-emerald-400 uppercase select-none flex items-center gap-1">
                                                             <FontAwesomeIcon icon={faCheck} />
                                                             Correct Answer
                                                         </span>
@@ -274,6 +289,65 @@ export default function Results({ attempt }) {
                                 </div>
                             );
                         })}
+                    </div>
+                    
+                    </div>
+
+                    {/* Right Column: Answer Map Sidebar */}
+                    <div className="space-y-6 lg:sticky lg:top-6">
+                        <div className="bg-white border border-slate-200 rounded-xl p-5 dark:bg-slate-800 dark:border-slate-700">
+                            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-205 mb-4 uppercase tracking-wider flex items-center gap-1.5">
+                                <FontAwesomeIcon icon={faCheckDouble} className="text-slate-500" />
+                                Answer Map
+                            </h3>
+
+                            <div className="max-h-[380px] overflow-y-auto pr-2 mb-6 scrollbar-thin">
+                                <div className="grid grid-cols-5 gap-2">
+                                    {answers.map((answer, index) => {
+                                        const isCorrect = answer.is_correct;
+                                        const isSkipped = !answer.selected_option_id;
+
+                                        let btnClasses = "relative flex items-center justify-center h-10 w-full rounded-lg text-xs font-bold border transition ";
+
+                                        if (isSkipped) {
+                                            btnClasses += "bg-amber-500 border-amber-500 text-white hover:bg-amber-600 ";
+                                        } else if (isCorrect) {
+                                            btnClasses += "bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:border-emerald-500 dark:hover:bg-emerald-600 ";
+                                        } else {
+                                            btnClasses += "bg-red-600 border-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:border-red-500 dark:hover:bg-red-600 ";
+                                        }
+
+                                        return (
+                                            <button
+                                                key={answer.id}
+                                                onClick={() => scrollToQuestion(index)}
+                                                className={btnClasses}
+                                                title={`Question ${index + 1}: ${isSkipped ? 'Skipped' : isCorrect ? 'Correct' : 'Incorrect'}`}
+                                            >
+                                                {index + 1}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2 pt-4 border-t border-slate-100 dark:border-slate-700 text-xxs font-semibold text-slate-500 dark:text-slate-400">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-3 h-3 bg-emerald-600 border border-emerald-600 rounded dark:bg-emerald-500"></span>
+                                    <span>Correct</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-3 h-3 bg-red-600 border border-red-600 rounded dark:bg-red-500"></span>
+                                    <span>Incorrect</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-3 h-3 bg-amber-500 border border-amber-500 rounded"></span>
+                                    <span>Skipped</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     </div>
 
                 </div>
