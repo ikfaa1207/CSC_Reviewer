@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Question extends Model
 {
-    protected $fillable = ['exam_category_id', 'question_text', 'explanation', 'audit_status', 'audit_error'];
+    protected $fillable = ['exam_category_id', 'question_text', 'explanation', 'audit_status', 'audit_error', 'problem_type_tag'];
 
     public function category()
     {

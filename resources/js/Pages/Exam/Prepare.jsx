@@ -37,13 +37,16 @@ export default function Prepare({ categories }) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <h1 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-101 flex items-center gap-2">
                     <FontAwesomeIcon icon={faClipboardList} className="text-slate-700 dark:text-slate-400" />
                     Prepare Practice Session
-                </h2>
+                </h1>
             }
         >
-            <Head title="Prepare Exam" />
+            <Head>
+                <title>Prepare Civil Service Practice Exam | Zepo</title>
+                <meta name="description" content="Configure and customize your Civil Service Exam (CSE) practice session. Select between Professional and Sub-Professional levels, choose a focus category, and set your timer mode." />
+            </Head>
 
             <div className="py-8">
                 <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">

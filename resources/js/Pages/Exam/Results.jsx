@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { renderQuestionContent } from '@/Components/AbstractReasoningDiagram';
 import {
     faAward,
     faCheck,
@@ -50,10 +51,10 @@ export default function Results({ attempt }) {
             header={
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <h1 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100 flex items-center gap-2">
                             <FontAwesomeIcon icon={faAward} className="text-slate-700 dark:text-slate-305" />
                             Assessment Report
-                        </h2>
+                        </h1>
                         <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 block">
                             Exam completed on {formatDate(completed_at)}
                         </span>
@@ -77,19 +78,16 @@ export default function Results({ attempt }) {
                 </div>
             }
         >
-            <Head title="Exam Results Report" />
+            <Head>
+                <title>Civil Service Exam Assessment Report | Zepo</title>
+                <meta name="description" content="View your detailed Civil Service Exam practice session results, correct answers, explanation walkthroughs, and success rates." />
+            </Head>
 
             <div className="py-6 sm:py-8">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     
-                    {/* Main Split Layout */}
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4 items-start">
-                        
-                        {/* Summary and Details Column */}
-                        <div className="lg:col-span-3 space-y-6">
-                    
-                    {/* Score summary panel */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-6 mb-8 dark:bg-slate-800 dark:border-slate-700 flex flex-col md:flex-row items-center gap-6 justify-between">
+                    {/* Score summary panel (Full-Width) */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-6 mb-6 dark:bg-slate-800 dark:border-slate-700 flex flex-col md:flex-row items-center gap-6 justify-between">
                         
                         {/* Circle Score chart */}
                         <div className="flex items-center gap-5">
@@ -171,6 +169,12 @@ export default function Results({ attempt }) {
 
                     </div>
 
+                    {/* Main Split Layout */}
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4 items-start">
+                        
+                        {/* Summary and Details Column */}
+                        <div className="lg:col-span-3 space-y-6 order-2 lg:order-1">
+
                     {/* Question by question detail review list */}
                     <div className="space-y-6">
                         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -223,7 +227,7 @@ export default function Results({ attempt }) {
 
                                     {/* Question text */}
                                     <p className="text-slate-855 text-sm font-semibold leading-relaxed mb-6 dark:text-slate-205 select-none whitespace-pre-line">
-                                        {question.question_text.replace(/\s*\(Variation ID:\s*\d+\)/gi, '')}
+                                        {renderQuestionContent(question.question_text.replace(/\s*\(Variation ID:\s*\d+\)/gi, ''))}
                                     </p>
 
                                     {/* Option List status */}
@@ -233,7 +237,7 @@ export default function Results({ attempt }) {
                                             const isSelected = answer.selected_option_id === option.id;
                                             const isOptionCorrect = option.is_correct;
 
-                                            let optionClass = "w-full flex items-start text-left p-3 text-xs border rounded-lg transition-colors ";
+                                            let optionClass = "w-full flex items-center text-left p-3 text-xs border rounded-lg transition-colors ";
                                             let labelClass = "inline-flex items-center justify-center w-5 h-5 rounded text-xxs font-bold mr-2 border shrink-0 ";
 
                                             if (isOptionCorrect) {
@@ -242,12 +246,12 @@ export default function Results({ attempt }) {
                                                 labelClass += "bg-emerald-600 text-white border-emerald-600 dark:bg-emerald-500 dark:text-white dark:border-emerald-500";
                                             } else if (isSelected && !isCorrect) {
                                                 // User selected incorrect option
-                                                optionClass += "border-red-300 bg-red-50/50 text-red-850 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-400";
-                                                labelClass += "bg-red-650 text-white border-red-650 dark:bg-red-800 dark:border-red-800";
+                                                optionClass += "border-red-300 bg-red-50/50 text-red-800 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-400";
+                                                labelClass += "bg-red-600 text-white border-red-600 dark:bg-red-800 dark:border-red-800";
                                             } else {
                                                 // Default option style
                                                 optionClass += "border-slate-200 dark:border-slate-700 dark:text-slate-400";
-                                                labelClass += "bg-slate-50 text-slate-650 border-slate-200 dark:bg-slate-800 dark:border-slate-700";
+                                                labelClass += "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:border-slate-700";
                                             }
 
                                             return (
@@ -255,7 +259,7 @@ export default function Results({ attempt }) {
                                                     <span className={labelClass}>
                                                         {label}
                                                     </span>
-                                                    <span className="pt-0.5 leading-normal">{option.option_text}</span>
+                                                    <span className="pt-0.5 leading-normal flex-1">{renderQuestionContent(option.option_text)}</span>
                                                     {isOptionCorrect && (
                                                         <span className="ml-auto text-xxs font-bold text-emerald-600 dark:text-emerald-400 uppercase select-none flex items-center gap-1">
                                                             <FontAwesomeIcon icon={faCheck} />
@@ -263,7 +267,7 @@ export default function Results({ attempt }) {
                                                         </span>
                                                     )}
                                                     {isSelected && !isCorrect && (
-                                                        <span className="ml-auto text-xxs font-bold text-red-650 dark:text-red-450 uppercase select-none flex items-center gap-1">
+                                                        <span className="ml-auto text-xxs font-bold text-red-600 dark:text-red-400 uppercase select-none flex items-center gap-1">
                                                             <FontAwesomeIcon icon={faTimes} />
                                                             Your Choice
                                                         </span>
@@ -294,7 +298,7 @@ export default function Results({ attempt }) {
                     </div>
 
                     {/* Right Column: Answer Map Sidebar */}
-                    <div className="space-y-6 lg:sticky lg:top-6">
+                    <div className="space-y-6 lg:sticky lg:top-6 order-1 lg:order-2">
                         <div className="bg-white border border-slate-200 rounded-xl p-5 dark:bg-slate-800 dark:border-slate-700">
                             <h3 className="text-sm font-bold text-slate-800 dark:text-slate-205 mb-4 uppercase tracking-wider flex items-center gap-1.5">
                                 <FontAwesomeIcon icon={faCheckDouble} className="text-slate-500" />

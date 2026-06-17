@@ -112,6 +112,7 @@ class ExamTest extends TestCase
         
         $question = Question::first();
         $this->assertEquals($category->id, $question->exam_category_id);
+        $this->assertEquals('general-info-constitution-rights', $question->problem_type_tag);
         $this->assertEquals(1, QuestionOption::where('is_correct', true)->count());
     }
 
@@ -205,7 +206,7 @@ class ExamTest extends TestCase
         // Create duplicate questions
         $q1 = Question::create([
             'exam_category_id' => $category->id,
-            'question_text' => 'Duplicate Question Text',
+            'question_text' => 'Duplicate Question Text (Variation ID: 1)',
         ]);
         QuestionOption::create([
             'question_id' => $q1->id,
@@ -215,7 +216,7 @@ class ExamTest extends TestCase
 
         $q2 = Question::create([
             'exam_category_id' => $category->id,
-            'question_text' => 'duplicate question text ', // Case difference and trailing space
+            'question_text' => 'duplicate question text (Variation ID: 2) ', // Case difference, trailing space, and different variation ID
         ]);
         QuestionOption::create([
             'question_id' => $q2->id,
@@ -459,5 +460,150 @@ class ExamTest extends TestCase
         $this->assertNotEquals($attempt1->id, $attempt2->id);
         $this->assertEquals(150, $attempt2->total_questions);
         $this->assertEquals('review', $attempt2->mode);
+    }
+
+    public function test_ai_generation_self_correcting_retry_loop_with_http_fake(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        
+        $category = ExamCategory::create([
+            'name' => 'General Information',
+            'level' => 'both',
+        ]);
+
+        config(['services.ai.key' => 'fake-test-api-key']);
+
+        \Illuminate\Support\Facades\Http::fake([
+            'https://generativelanguage.googleapis.com/*' => \Illuminate\Support\Facades\Http::sequence()
+                // Attempt 1: Generate 1 question
+                ->push([
+                    'candidates' => [[
+                        'content' => [
+                            'parts' => [[
+                                'text' => json_encode([
+                                    [
+                                        'question_text' => 'Duplicate Q',
+                                        'options' => ['A', 'B', 'C', 'D'],
+                                        'correct_option_index' => 0,
+                                        'explanation' => 'Exp',
+                                        'problem_type_tag' => 'test-tag',
+                                    ]
+                                ])
+                            ]]
+                        ]
+                    ]]
+                ], 200)
+                // Attempt 1: Verify 1 question (invalid/duplicate)
+                ->push([
+                    'candidates' => [[
+                        'content' => [
+                            'parts' => [[
+                                'text' => json_encode([
+                                    [
+                                        'question_text' => 'Duplicate Q',
+                                        'options' => ['A', 'B', 'C', 'D'],
+                                        'correct_option_index' => 0,
+                                        'explanation' => 'Exp',
+                                        'problem_type_tag' => 'test-tag',
+                                        'is_valid' => false,
+                                        'error_reason' => 'Semantic duplicate'
+                                    ]
+                                ])
+                            ]]
+                        ]
+                    ]]
+                ], 200)
+                // Attempt 2: Generate 1 question
+                ->push([
+                    'candidates' => [[
+                        'content' => [
+                            'parts' => [[
+                                'text' => json_encode([
+                                    [
+                                        'question_text' => 'Valid Q1',
+                                        'options' => ['A', 'B', 'C', 'D'],
+                                        'correct_option_index' => 1,
+                                        'explanation' => 'Exp',
+                                        'problem_type_tag' => 'test-tag',
+                                    ]
+                                ])
+                            ]]
+                        ]
+                    ]]
+                ], 200)
+                // Attempt 2: Verify 1 question (valid)
+                ->push([
+                    'candidates' => [[
+                        'content' => [
+                            'parts' => [[
+                                'text' => json_encode([
+                                    [
+                                        'question_text' => 'Valid Q1',
+                                        'options' => ['A', 'B', 'C', 'D'],
+                                        'correct_option_index' => 1,
+                                        'explanation' => 'Exp',
+                                        'problem_type_tag' => 'test-tag',
+                                        'is_valid' => true,
+                                        'error_reason' => null
+                                    ]
+                                ])
+                            ]]
+                        ]
+                    ]]
+                ], 200)
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('admin.questions.generateAI'), [
+            'exam_category_id' => $category->id,
+            'level' => 'professional',
+            'count' => 1,
+        ]);
+
+        $response->assertRedirect(route('admin.questions.index'));
+
+        // Assert 1 question was successfully saved (Valid Q1)
+        $this->assertEquals(1, Question::count());
+        $this->assertEquals(4, QuestionOption::count());
+
+        $savedQuestion = Question::first();
+        $this->assertEquals('Valid Q1', $savedQuestion->question_text);
+
+        // Verify that 'Duplicate Q' was skipped
+        $this->assertFalse(Question::where('question_text', 'Duplicate Q')->exists());
+    }
+
+    public function test_admin_can_generate_all_categories_combined_via_ai(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        
+        // Seed the 4 active categories for professional level
+        $cat1 = ExamCategory::create(['name' => 'Numerical Ability', 'level' => 'both']);
+        $cat2 = ExamCategory::create(['name' => 'Verbal Ability', 'level' => 'both']);
+        $cat3 = ExamCategory::create(['name' => 'Analytical Ability', 'level' => 'professional']);
+        $cat4 = ExamCategory::create(['name' => 'General Information', 'level' => 'both']);
+
+        // We request a total of 5 questions
+        // Distributing 5 across 4 categories:
+        // Cat 1 (Numerical): 2 questions
+        // Cat 2 (Verbal): 1 question
+        // Cat 3 (Analytical): 1 question
+        // Cat 4 (General Info): 1 question
+        // Falls back to mock questions since no API key is present in test env
+        $response = $this->actingAs($admin)->post(route('admin.questions.generateAI'), [
+            'exam_category_id' => 'all',
+            'level' => 'professional',
+            'count' => 5,
+        ]);
+
+        $response->assertRedirect(route('admin.questions.index'));
+
+        // Assert 5 questions are created in total
+        $this->assertEquals(5, Question::count());
+
+        // Assert that the questions are distributed correctly across categories
+        $this->assertEquals(2, Question::where('exam_category_id', $cat1->id)->count());
+        $this->assertEquals(1, Question::where('exam_category_id', $cat2->id)->count());
+        $this->assertEquals(1, Question::where('exam_category_id', $cat3->id)->count());
+        $this->assertEquals(1, Question::where('exam_category_id', $cat4->id)->count());
     }
 }

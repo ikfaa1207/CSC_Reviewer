@@ -12,24 +12,27 @@ import {
 export default function Welcome({ auth }) {
     return (
         <>
-            <Head title="Welcome - Civil Service Exam Reviewer" />
-            <div className="min-h-screen bg-slate-50 flex flex-col justify-between text-slate-800 dark:bg-slate-900 dark:text-slate-100 transition-colors">
+            <Head>
+                <title>Philippine Civil Service Exam Reviewer | Zepo</title>
+                <meta name="description" content="Prepare and review for the Philippine Civil Service Examination (CSE). Take mock tests, review answers, and check category performance analytics on Zepo." />
+            </Head>
+            <div className="min-h-screen bg-slate-50 flex flex-col justify-between text-slate-800 dark:bg-slate-900 dark:text-slate-101 transition-colors">
                 
                 {/* Header Navbar */}
                 <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950/40">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <FontAwesomeIcon icon={faGraduationCap} className="text-slate-700 dark:text-slate-300 w-5 h-5" />
-                            <span className="text-lg font-bold tracking-tight uppercase">CSE Reviewer</span>
-                            <span className="inline-flex items-center rounded bg-slate-100 px-1.5 py-0.5 text-xxs font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                            <FontAwesomeIcon icon={faGraduationCap} className="text-slate-700 dark:text-slate-300 w-4 h-4 sm:w-5 sm:h-5" />
+                            <span className="text-sm sm:text-lg font-bold tracking-tight uppercase">CSE Reviewer</span>
+                            <span className="hidden sm:inline-flex items-center rounded bg-slate-100 px-1.5 py-0.5 text-xxs font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-200">
                                 Self-Assessment
                             </span>
                         </div>
-                        <nav className="flex gap-4">
+                        <nav className="flex gap-2.5 sm:gap-4">
                             {auth.user ? (
                                 <Link
                                     href={route('dashboard')}
-                                    className="text-sm font-semibold text-slate-750 hover:text-slate-950 dark:text-slate-350 dark:hover:text-slate-100 flex items-center gap-1.5"
+                                    className="text-xs sm:text-sm font-semibold text-slate-750 hover:text-slate-955 dark:text-slate-350 dark:hover:text-slate-100 flex items-center gap-1"
                                 >
                                     Dashboard
                                 </Link>
@@ -37,16 +40,16 @@ export default function Welcome({ auth }) {
                                 <>
                                     <Link
                                         href={route('login')}
-                                        className="text-sm font-semibold text-slate-750 hover:text-slate-950 dark:text-slate-350 dark:hover:text-slate-100 flex items-center gap-1.5"
+                                        className="text-xs sm:text-sm font-semibold text-slate-750 hover:text-slate-955 dark:text-slate-350 dark:hover:text-slate-100 flex items-center gap-1"
                                     >
-                                        <FontAwesomeIcon icon={faSignInAlt} className="w-3.5 h-3.5" />
+                                        <FontAwesomeIcon icon={faSignInAlt} className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                                         Log in
                                     </Link>
                                     <Link
                                         href={route('register')}
-                                        className="text-sm font-semibold text-slate-755 hover:text-slate-950 dark:text-slate-350 dark:hover:text-slate-100 flex items-center gap-1.5"
+                                        className="text-xs sm:text-sm font-semibold text-slate-755 hover:text-slate-950 dark:text-slate-350 dark:hover:text-slate-100 flex items-center gap-1"
                                     >
-                                        <FontAwesomeIcon icon={faUserPlus} className="w-3.5 h-3.5" />
+                                        <FontAwesomeIcon icon={faUserPlus} className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                                         Register
                                     </Link>
                                 </>

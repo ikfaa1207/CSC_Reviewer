@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import ConfirmationModal from '@/Components/ConfirmationModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { renderQuestionContent } from '@/Components/AbstractReasoningDiagram';
 import {
     faClock,
     faFlag,
@@ -154,9 +155,9 @@ export default function Take({ attempt }) {
             header={
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100 uppercase flex items-center gap-2">
+                        <h1 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100 uppercase flex items-center gap-2">
                             {attempt.level.replace('_', ' ')} Exam
-                        </h2>
+                        </h1>
                         <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 block">
                             Self-Assessment Practice Session
                         </span>
@@ -188,7 +189,10 @@ export default function Take({ attempt }) {
                 </div>
             }
         >
-            <Head title="Taking Civil Service Exam" />
+            <Head>
+                <title>Taking Civil Service Practice Exam | Zepo</title>
+                <meta name="description" content="Active Civil Service Exam practice session. Answer questions, flag them for review, and track your progress in real-time." />
+            </Head>
 
             <div className="py-6">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -215,7 +219,7 @@ export default function Take({ attempt }) {
 
                                 {/* Question Text */}
                                 <div className="text-slate-800 text-base leading-relaxed font-medium mb-8 dark:text-slate-101 select-none whitespace-pre-line">
-                                    {currentQuestion.question_text.replace(/\s*\(Variation ID:\s*\d+\)/gi, '')}
+                                    {renderQuestionContent(currentQuestion.question_text.replace(/\s*\(Variation ID:\s*\d+\)/gi, ''))}
                                 </div>
 
                                 {/* Multiple Choice Options */}
@@ -228,12 +232,12 @@ export default function Take({ attempt }) {
                                             <button
                                                 key={option.id}
                                                 onClick={() => handleSelectOption(option.id)}
-                                                className={`w-full flex items-start text-left p-4 border rounded-xl transition ${isSelected ? 'border-slate-800 bg-slate-50 text-slate-800 shadow-sm dark:border-slate-105 dark:bg-slate-700/50 dark:text-slate-100' : 'border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-750 dark:text-slate-300'}`}
+                                                className={`w-full flex items-center text-left p-4 border rounded-xl transition ${isSelected ? 'border-slate-800 bg-slate-50 text-slate-800 shadow-sm dark:border-slate-105 dark:bg-slate-700/50 dark:text-slate-100' : 'border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-750 dark:text-slate-300'}`}
                                             >
-                                                <span className={`inline-flex items-center justify-center w-6 h-6 rounded-md text-xs font-bold mr-3 border shrink-0 ${isSelected ? 'bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-white' : 'bg-slate-50 text-slate-650 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}>
+                                                <span className={`inline-flex items-center justify-center w-6 h-6 rounded-md text-xs font-bold mr-3 border shrink-0 ${isSelected ? 'bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-white' : 'bg-slate-55 text-slate-650 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}>
                                                     {label}
                                                 </span>
-                                                <span className="text-sm pt-0.5 leading-normal">{option.option_text}</span>
+                                                <span className="text-sm pt-0.5 leading-normal flex-1">{renderQuestionContent(option.option_text)}</span>
                                             </button>
                                         );
                                     })}

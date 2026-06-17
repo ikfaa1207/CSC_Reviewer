@@ -3,6 +3,8 @@ import { Head, useForm, router } from '@inertiajs/react';
 import { useState } from 'react';
 import ConfirmationModal from '@/Components/ConfirmationModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { renderQuestionContent } from '@/Components/AbstractReasoningDiagram';
+import axios from 'axios';
 import { 
     faPlus, 
     faWandMagicSparkles, 
@@ -15,10 +17,12 @@ import {
     faCheck,
     faFileAlt,
     faFilter,
-    faExclamationTriangle
+    faExclamationTriangle,
+    faChevronDown,
+    faChevronUp
 } from '@fortawesome/free-solid-svg-icons';
 
-export default function Questions({ questions, categories }) {
+export default function Questions({ questions, categories, aiUsage }) {
 
     const [editingQuestion, setEditingQuestion] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -31,6 +35,56 @@ export default function Questions({ questions, categories }) {
     const [auditing, setAuditing] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
     const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
+    const [expandedIds, setExpandedIds] = useState([]);
+    const [fixingQuestionId, setFixingQuestionId] = useState(null);
+
+    const toggleExpand = (id) => {
+        setExpandedIds(prev =>
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
+    };
+
+    const handleExpandAll = () => {
+        setExpandedIds(filteredQuestions.map(q => q.id));
+    };
+
+    const handleCollapseAll = () => {
+        setExpandedIds([]);
+    };
+
+    const handleSuggestFix = (question) => {
+        setFixingQuestionId(question.id);
+        
+        axios.post(route('admin.questions.suggestFix', question.id))
+            .then(response => {
+                const fixData = response.data;
+                setEditingQuestion(question);
+                clearErrors();
+                
+                setData({
+                    exam_category_id: fixData.exam_category_id,
+                    question_text: fixData.question_text,
+                    explanation: fixData.explanation || '',
+                    options: fixData.options.map(opt => ({
+                        option_text: opt.option_text,
+                        is_correct: !!opt.is_correct
+                    }))
+                });
+
+                // Scroll the add/edit form container into view
+                const formEl = document.getElementById('form_category');
+                if (formEl) {
+                    formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            })
+            .catch(error => {
+                console.error("AI suggested fix failed:", error);
+                alert(error.response?.data?.error || "Failed to fetch AI suggested corrections. Please verify configuration or logs.");
+            })
+            .finally(() => {
+                setFixingQuestionId(null);
+            });
+    };
 
     // Inertia Form hook for Add/Edit
     const { data, setData, post, put, reset, processing, errors, clearErrors } = useForm({
@@ -85,6 +139,14 @@ export default function Questions({ questions, categories }) {
     };
 
     const handleAILevelChange = (newLevel) => {
+        if (aiForm.data.exam_category_id === 'all') {
+            aiForm.setData({
+                ...aiForm.data,
+                level: newLevel
+            });
+            return;
+        }
+
         const selectedCat = categories.find(c => c.id === parseInt(aiForm.data.exam_category_id));
         const keepCategory = selectedCat && (selectedCat.level === 'both' || selectedCat.level === newLevel);
         
@@ -207,10 +269,32 @@ export default function Questions({ questions, categories }) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                    <FontAwesomeIcon icon={faFileAlt} className="text-slate-600 dark:text-slate-400" />
-                    Question Bank Manager
-                </h2>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <FontAwesomeIcon icon={faFileAlt} className="text-slate-600 dark:text-slate-400" />
+                        Question Bank Manager
+                    </h2>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2 sm:mt-0 select-none">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xxs font-bold bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 uppercase tracking-wider">
+                            Total: {questions.length}
+                        </span>
+                        {duplicateQuestionsCount > 0 && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xxs font-bold bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60 uppercase tracking-wider animate-pulse">
+                                Duplicates: {duplicateQuestionsCount}
+                            </span>
+                        )}
+                        {auditIssuesQuestionsCount > 0 && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xxs font-bold bg-rose-50 text-rose-800 dark:bg-rose-900/30 dark:text-rose-350 border border-rose-200 dark:border-rose-900/60 uppercase tracking-wider animate-pulse">
+                                Flagged: {auditIssuesQuestionsCount}
+                            </span>
+                        )}
+                        {aiUsage && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xxs font-bold bg-indigo-50 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/60 uppercase tracking-wider">
+                                AI: {aiUsage.count}/{aiUsage.limit}
+                            </span>
+                        )}
+                    </div>
+                </div>
             }
         >
             <Head title="Admin Question Manager" />
@@ -235,7 +319,54 @@ export default function Questions({ questions, categories }) {
                                         Instantly generate high-quality CSE questions matching category, level, and quantity.
                                     </p>
 
+                                    {/* Warnings if API key is invalid/missing or quota exceeded */}
+                                    {aiUsage && !aiUsage.hasApiKey && (
+                                        <div className="mb-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60">
+                                            <div className="flex gap-2">
+                                                <FontAwesomeIcon icon={faExclamationTriangle} className="mt-0.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                                                <div>
+                                                    <span className="font-semibold block mb-0.5">Local Mock Fallback Mode Active</span>
+                                                    Your <code>AI_API_KEY</code> in <code>.env</code> is missing or using a default placeholder. The system is falling back to local mock templates, which will result in duplicate/repeating questions.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
 
+                                    {aiUsage && aiUsage.quotaExceeded && (
+                                        <div className="mb-4 rounded-lg bg-red-50 p-3 text-xs text-red-800 dark:bg-red-950/40 dark:text-red-300 border border-red-200 dark:border-red-900/60">
+                                            <div className="flex gap-2">
+                                                <FontAwesomeIcon icon={faExclamationTriangle} className="mt-0.5 text-red-650 dark:text-red-400 flex-shrink-0" />
+                                                <div>
+                                                    <span className="font-semibold block mb-0.5">Gemini API Quota Exceeded (429)</span>
+                                                    Your Gemini API free tier limit or billing quota has been exceeded. The system has fallen back to local mock templates, which will result in duplicate/repeating questions.
+                                                    <button 
+                                                        onClick={() => router.post(route('admin.questions.resetAIUsage'))}
+                                                        className="mt-2 text-xxs font-semibold underline text-red-700 hover:text-red-900 dark:text-red-400 dark:hover:text-red-350 block text-left"
+                                                    >
+                                                        Clear Quota Error & Reset Stats
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {aiUsage && !aiUsage.quotaExceeded && aiUsage.lastError && (
+                                        <div className="mb-4 rounded-lg bg-red-50 p-3 text-xs text-red-800 dark:bg-red-950/40 dark:text-red-300 border border-red-200 dark:border-red-900/60">
+                                            <div className="flex gap-2">
+                                                <FontAwesomeIcon icon={faExclamationTriangle} className="mt-0.5 text-red-650 dark:text-red-400 flex-shrink-0" />
+                                                <div>
+                                                    <span className="font-semibold block mb-0.5">AI Generation Error</span>
+                                                    The last API call failed with error: <em className="break-all">{aiUsage.lastError}</em>. The system fell back to local mock templates.
+                                                    <button 
+                                                        onClick={() => router.post(route('admin.questions.resetAIUsage'))}
+                                                        className="mt-2 text-xxs font-semibold underline text-red-700 hover:text-red-900 dark:text-red-400 dark:hover:text-red-350 block text-left"
+                                                    >
+                                                        Clear Error Message
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                     
                                     <form onSubmit={handleAIGenerate} className="space-y-4">
                                         <div>
@@ -266,6 +397,7 @@ export default function Questions({ questions, categories }) {
                                                 required
                                             >
                                                 <option value="">Select Category</option>
+                                                <option value="all">All Categories Combined</option>
                                                 {filteredAICategories.map((cat) => (
                                                     <option key={cat.id} value={cat.id}>
                                                         {cat.name}
@@ -293,6 +425,7 @@ export default function Questions({ questions, categories }) {
                                                 <option value="30">30 Questions</option>
                                                 <option value="40">40 Questions</option>
                                                 <option value="50">50 Questions</option>
+                                                <option value="150">150 Questions</option>
                                             </select>
                                         </div>
 
@@ -517,10 +650,10 @@ export default function Questions({ questions, categories }) {
                                             <FontAwesomeIcon icon={faExclamationTriangle} className="w-4 h-4" />
                                         </span>
                                         <div>
-                                            <h4 className="text-sm font-bold text-amber-900 dark:text-amber-305">
+                                            <h4 className="text-sm font-bold text-amber-900 dark:text-amber-300">
                                                 Duplicate Questions Detected
                                             </h4>
-                                            <p className="text-xs text-amber-705 dark:text-amber-450 mt-0.5 leading-relaxed">
+                                            <p className="text-xs text-amber-700 dark:text-amber-450 mt-0.5 leading-relaxed">
                                                 There are <strong>{duplicateQuestionsCount}</strong> duplicate questions in the database. Cleaning them will merge duplicates and retain the oldest entry.
                                             </p>
                                         </div>
@@ -546,7 +679,7 @@ export default function Questions({ questions, categories }) {
                                             <h4 className="text-sm font-bold text-red-900 dark:text-red-300">
                                                 Integrity Issues Flagged
                                             </h4>
-                                            <p className="text-xs text-red-705 dark:text-red-450 mt-0.5 leading-relaxed">
+                                            <p className="text-xs text-red-700 dark:text-red-400 mt-0.5 leading-relaxed">
                                                 The audit scanned the database and flagged <strong>{auditIssuesQuestionsCount}</strong> questions with structural or factual errors. Please review and correct them.
                                             </p>
                                         </div>
@@ -559,7 +692,7 @@ export default function Questions({ questions, categories }) {
                                             onChange={(e) => setShowAuditIssuesOnly(e.target.checked)}
                                             className="h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500 dark:border-slate-700 dark:bg-slate-900 dark:checked:bg-red-500"
                                         />
-                                        <label htmlFor="audit_filter" className="text-xs font-bold text-red-750 dark:text-red-400 cursor-pointer">
+                                        <label htmlFor="audit_filter" className="text-xs font-bold text-red-700 dark:text-red-400 cursor-pointer">
                                             Filter Flagged Only
                                         </label>
                                     </div>
@@ -568,17 +701,27 @@ export default function Questions({ questions, categories }) {
 
                             {/* Questions Count indicator */}
                             <div className="flex items-center justify-between pl-1 pr-2">
-                                <p className="text-xs font-semibold text-slate-550 dark:text-slate-400 uppercase tracking-wider">
+                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                     Database: {filteredQuestions.length} Questions found {searchTerm || categoryFilter ? '(filtered)' : ''}
                                 </p>
                                 {filteredQuestions.length > 0 && (
-                                    <button
-                                        type="button"
-                                        onClick={handleToggleSelectAll}
-                                        className="text-xxs font-extrabold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 hover:underline select-none cursor-pointer"
-                                    >
-                                        {selectedIds.length === filteredQuestions.length ? 'Deselect All' : 'Select All Filtered'}
-                                    </button>
+                                    <div className="flex items-center gap-3 select-none">
+                                        <button
+                                            type="button"
+                                            onClick={handleToggleSelectAll}
+                                            className="text-xxs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 hover:underline cursor-pointer"
+                                        >
+                                            {selectedIds.length === filteredQuestions.length ? 'Deselect All' : 'Select All Filtered'}
+                                        </button>
+                                        <span className="text-slate-300 dark:text-slate-600 text-xxs">|</span>
+                                        <button
+                                            type="button"
+                                            onClick={expandedIds.length === filteredQuestions.length ? handleCollapseAll : handleExpandAll}
+                                            className="text-xxs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 hover:underline cursor-pointer"
+                                        >
+                                            {expandedIds.length === filteredQuestions.length ? 'Collapse All' : 'Expand All'}
+                                        </button>
+                                    </div>
                                 )}
                             </div>
 
@@ -589,108 +732,156 @@ export default function Questions({ questions, categories }) {
                                         No questions in database matching filters. Use the forms on the left to create or generate questions.
                                     </div>
                                 ) : (
-                                    filteredQuestions.map((q) => (
-                                        <div 
-                                            key={q.id}
-                                            className="bg-white border border-slate-200 rounded-xl p-5 dark:bg-slate-800 dark:border-slate-700"
-                                        >
-                                            {/* Header */}
-                                            <div className="flex justify-between items-start border-b border-slate-100 pb-2.5 mb-3 dark:border-slate-700">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedIds.includes(q.id)}
-                                                        onChange={(e) => {
-                                                            if (e.target.checked) {
-                                                                setSelectedIds(prev => [...prev, q.id]);
-                                                            } else {
-                                                                setSelectedIds(prev => prev.filter(id => id !== q.id));
-                                                            }
-                                                        }}
-                                                        className="h-4 w-4 rounded border-slate-305 text-slate-900 focus:ring-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:checked:bg-slate-100 mr-2 cursor-pointer shrink-0"
-                                                        title="Select question"
-                                                    />
-                                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                        {q.category.name}
-                                                    </span>
-                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xxs font-medium bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300 uppercase">
-                                                        {q.category.level === 'both' ? 'Prof & Sub-Prof' : q.category.level}
-                                                    </span>
-                                                    {q.is_duplicate && (
-                                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xxs font-bold bg-amber-50 text-amber-805 dark:bg-amber-950/30 dark:text-amber-400 uppercase tracking-wider animate-pulse">
-                                                            <FontAwesomeIcon icon={faExclamationTriangle} className="w-2.5 h-2.5" />
-                                                            Duplicate
-                                                        </span>
-                                                    )}
-                                                    {q.audit_status && q.audit_status !== 'passed' && (
-                                                        <span 
-                                                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xxs font-bold bg-red-50 text-red-800 dark:bg-red-950/30 dark:text-red-400 uppercase tracking-wider animate-pulse cursor-help"
-                                                            title={q.audit_error || 'Correctness verification failed'}
-                                                        >
-                                                            <FontAwesomeIcon icon={faExclamationTriangle} className="w-2.5 h-2.5 text-red-600" />
-                                                            {q.audit_status === 'failed_structure' ? 'Structural Mismatch' : 'Factual Warning'}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="flex gap-3">
-                                                    <button
-                                                        onClick={() => startEdit(q)}
-                                                        className="text-xs font-semibold text-slate-605 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-205 transition flex items-center gap-1"
-                                                    >
-                                                        <FontAwesomeIcon icon={faPen} className="w-3 h-3" />
-                                                        Edit
-                                                    </button>
-                                                    <span className="text-slate-200 dark:text-slate-650">|</span>
-                                                    <button
-                                                        onClick={() => triggerDelete(q.id)}
-                                                        className="text-xs font-semibold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-305 transition flex items-center gap-1"
-                                                    >
-                                                        <FontAwesomeIcon icon={faTrash} className="w-3 h-3" />
-                                                        Delete
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Question Text */}
-                                            <p className="text-sm font-semibold text-slate-850 leading-relaxed mb-4 dark:text-slate-205 select-text whitespace-pre-line">
-                                                {q.question_text.replace(/\s*\(Variation ID:\s*\d+\)/gi, '')}
-                                            </p>
-
-                                            {/* Options Grid */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                                                {q.options.map((opt, idx) => (
-                                                    <div 
-                                                        key={opt.id} 
-                                                        className={`p-2.5 text-xs border rounded-lg flex items-center gap-2 ${opt.is_correct ? 'border-emerald-500 bg-emerald-50/30 font-semibold dark:border-emerald-500/30 dark:bg-emerald-950/20 dark:text-emerald-300' : 'border-slate-150 dark:border-slate-700 dark:text-slate-400'}`}
-                                                    >
-                                                        <span className={`w-4 h-4 rounded text-xxs font-extrabold flex items-center justify-center shrink-0 ${opt.is_correct ? 'bg-emerald-600 text-white dark:bg-emerald-500' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-550'}`}>
-                                                            {String.fromCharCode(65 + idx)}
-                                                        </span>
-                                                        <span className="truncate">{opt.option_text}</span>
-                                                        {opt.is_correct && (
-                                                            <FontAwesomeIcon icon={faCheck} className="ml-auto text-emerald-600 dark:text-emerald-400 w-3 h-3 shrink-0" />
-                                                        )}
+                                    filteredQuestions.map((q) => {
+                                        const isExpanded = expandedIds.includes(q.id);
+                                        return (
+                                            <div 
+                                                key={q.id}
+                                                className="bg-white border border-slate-200 rounded-xl p-5 dark:bg-slate-800 dark:border-slate-700 hover:shadow-md transition-shadow duration-200"
+                                            >
+                                                {/* Header & Truncated Question Row (Clickable to Toggle) */}
+                                                <div 
+                                                    onClick={() => toggleExpand(q.id)}
+                                                    className="cursor-pointer select-none"
+                                                >
+                                                    <div className="flex justify-between items-start pb-2.5">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedIds.includes(q.id)}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) {
+                                                                        setSelectedIds(prev => [...prev, q.id]);
+                                                                    } else {
+                                                                        setSelectedIds(prev => prev.filter(id => id !== q.id));
+                                                                    }
+                                                                }}
+                                                                className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:checked:bg-slate-100 mr-2 cursor-pointer shrink-0"
+                                                                title="Select question"
+                                                            />
+                                                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                                {q.category.name}
+                                                            </span>
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xxs font-medium bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300 uppercase">
+                                                                {q.category.level === 'both' ? 'Prof & Sub-Prof' : q.category.level}
+                                                            </span>
+                                                            {q.is_duplicate && (
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xxs font-bold bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-405 uppercase tracking-wider animate-pulse">
+                                                                    <FontAwesomeIcon icon={faExclamationTriangle} className="w-2.5 h-2.5" />
+                                                                    Duplicate
+                                                                </span>
+                                                            )}
+                                                            {q.audit_status && q.audit_status !== 'passed' && (
+                                                                <span 
+                                                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xxs font-bold bg-red-50 text-red-800 dark:bg-red-950/30 dark:text-red-400 uppercase tracking-wider animate-pulse cursor-help"
+                                                                    title={q.audit_error || 'Correctness verification failed'}
+                                                                >
+                                                                    <FontAwesomeIcon icon={faExclamationTriangle} className="w-2.5 h-2.5 text-red-600" />
+                                                                    {q.audit_status === 'failed_structure' ? 'Structural Mismatch' : 'Factual Warning'}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-3 shrink-0">
+                                                            {q.audit_status && q.audit_status !== 'passed' && (
+                                                                <>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleSuggestFix(q);
+                                                                        }}
+                                                                        disabled={fixingQuestionId === q.id}
+                                                                        className="text-xs font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition flex items-center gap-1 disabled:opacity-50 cursor-pointer"
+                                                                        title="Get AI suggested fixes for audit finding"
+                                                                    >
+                                                                        <FontAwesomeIcon icon={fixingQuestionId === q.id ? faSpinner : faWandMagicSparkles} className={fixingQuestionId === q.id ? "animate-spin w-3 h-3" : "w-3 h-3"} />
+                                                                        {fixingQuestionId === q.id ? 'Fixing...' : 'Fix'}
+                                                                    </button>
+                                                                    <span className="text-slate-200 dark:text-slate-700">|</span>
+                                                                </>
+                                                            )}
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    startEdit(q);
+                                                                }}
+                                                                className="text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 transition flex items-center gap-1"
+                                                            >
+                                                                <FontAwesomeIcon icon={faPen} className="w-3 h-3" />
+                                                                Edit
+                                                            </button>
+                                                            <span className="text-slate-200 dark:text-slate-700">|</span>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    triggerDelete(q.id);
+                                                                }}
+                                                                className="text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 transition flex items-center gap-1"
+                                                            >
+                                                                <FontAwesomeIcon icon={faTrash} className="w-3 h-3" />
+                                                                Delete
+                                                            </button>
+                                                            <span className="text-slate-200 dark:text-slate-700">|</span>
+                                                            <div className="p-0.5 text-slate-400 hover:text-slate-800 dark:text-slate-500 dark:hover:text-slate-300 transition-colors">
+                                                                <FontAwesomeIcon icon={isExpanded ? faChevronUp : faChevronDown} className="w-3.5 h-3.5" />
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                ))}
+
+                                                    {/* Question Text Snippet (Visible when collapsed) */}
+                                                    {!isExpanded && (
+                                                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate pr-4 leading-normal mt-1 border-t border-slate-50 pt-2 dark:border-slate-700/50">
+                                                            {q.question_text.replace(/\s*\(Variation ID:\s*\d+\)/gi, '')}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                {/* Expanded Content with height transition */}
+                                                <div 
+                                                    className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[1200px] opacity-100 mt-3 border-t border-slate-100 pt-3 dark:border-slate-700' : 'max-h-0 opacity-0 pointer-events-none'}`}
+                                                >
+                                                    {/* Question Text */}
+                                                    <p className="text-sm font-semibold text-slate-800 leading-relaxed mb-4 dark:text-slate-200 select-text whitespace-pre-line">
+                                                        {renderQuestionContent(q.question_text.replace(/\s*\(Variation ID:\s*\d+\)/gi, ''))}
+                                                    </p>
+
+                                                    {/* Options Grid */}
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                                                        {q.options.map((opt, idx) => (
+                                                            <div 
+                                                                key={opt.id} 
+                                                                className={`p-2.5 text-xs border rounded-lg flex items-center gap-2 ${opt.is_correct ? 'border-emerald-500 bg-emerald-50/30 font-semibold dark:border-emerald-500/30 dark:bg-emerald-950/20 dark:text-emerald-300' : 'border-slate-200 dark:border-slate-700 dark:text-slate-400'}`}
+                                                            >
+                                                                <span className={`w-4 h-4 rounded text-xxs font-extrabold flex items-center justify-center shrink-0 ${opt.is_correct ? 'bg-emerald-600 text-white dark:bg-emerald-500' : 'bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-500'}`}>
+                                                                     {String.fromCharCode(65 + idx)}
+                                                                </span>
+                                                                <span className="flex-1 min-w-0">{renderQuestionContent(opt.option_text)}</span>
+                                                                {opt.is_correct && (
+                                                                    <FontAwesomeIcon icon={faCheck} className="ml-auto text-emerald-600 dark:text-emerald-400 w-3 h-3 shrink-0" />
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Audit Error Warning Block */}
+                                                    {q.audit_status && q.audit_status !== 'passed' && q.audit_error && (
+                                                        <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xxs text-red-800 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-300 mb-3 flex items-center gap-1.5">
+                                                            <FontAwesomeIcon icon={faExclamationTriangle} className="text-red-600 w-3 h-3 shrink-0" />
+                                                            <span><strong>Audit Warning:</strong> {q.audit_error}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Explanation */}
+                                                    {q.explanation && (
+                                                        <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xxs text-slate-500 dark:bg-slate-900/30 dark:border-slate-700 dark:text-slate-405">
+                                                            <span className="font-bold text-slate-700 dark:text-slate-350 block mb-0.5">Explanation:</span>
+                                                            {q.explanation}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-
-                                            {/* Audit Error Warning Block */}
-                                            {q.audit_status && q.audit_status !== 'passed' && q.audit_error && (
-                                                <div className="bg-red-55 border border-red-200 rounded-lg px-3 py-2 text-xxs text-red-800 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-300 mb-3 flex items-center gap-1.5">
-                                                    <FontAwesomeIcon icon={faExclamationTriangle} className="text-red-600 w-3 h-3 shrink-0" />
-                                                    <span><strong>Audit Warning:</strong> {q.audit_error}</span>
-                                                </div>
-                                            )}
-
-                                            {/* Explanation */}
-                                            {q.explanation && (
-                                                <div className="bg-slate-50 border border-slate-150 rounded-lg px-3 py-2 text-xxs text-slate-500 dark:bg-slate-900/30 dark:border-slate-750 dark:text-slate-400">
-                                                    <span className="font-bold text-slate-700 dark:text-slate-355 block mb-0.5">Explanation:</span>
-                                                    {q.explanation}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
 
