@@ -30,6 +30,7 @@ class AIService
                     $tempCount -= $batchSize;
                 }
 
+                $provider = config('services.ai.provider', 'gemini');
                 $allQuestions = [];
                 foreach ($batches as $batchSize) {
                     $inProgressTexts = array_map(function ($q) {
@@ -42,7 +43,12 @@ class AIService
 
                     $mergedExclude = array_unique(array_merge($inProgressTexts, $cleanedExtra));
 
-                    $response = self::callGeminiApiBatch($categoryName, $level, $batchSize, $apiKey, $mergedExclude);
+                    if ($provider === 'groq') {
+                        $response = self::callGroqApiBatch($categoryName, $level, $batchSize, $apiKey, $mergedExclude);
+                    } else {
+                        $response = self::callGeminiApiBatch($categoryName, $level, $batchSize, $apiKey, $mergedExclude);
+                    }
+
                     if ($response && is_array($response)) {
                         $allQuestions = array_merge($allQuestions, $response);
                     } else {
@@ -56,8 +62,8 @@ class AIService
                     return array_slice($allQuestions, 0, $count);
                 }
             } catch (\Exception $e) {
-                Log::error('Gemini API bulk call failed, falling back to mock: ' . $e->getMessage());
-                \App\Models\Setting::set('ai_last_error', 'Gemini API bulk call failed: ' . $e->getMessage());
+                $providerName = ucfirst(config('services.ai.provider', 'gemini'));
+                Log::error("{$providerName} API bulk call failed, falling back to mock: " . $e->getMessage());
             }
         }
 
@@ -70,9 +76,6 @@ class AIService
      */
     private static function callGeminiApiBatch(string $categoryName, string $level, int $batchCount, string $apiKey, array $inProgressTexts = []): ?array
     {
-        if (config('services.ai.provider') === 'deepseek') {
-            return self::callDeepSeekApiBatch($categoryName, $level, $batchCount, $apiKey, $inProgressTexts);
-        }
 
         $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
 
@@ -590,9 +593,15 @@ class AIService
         $chunks = array_chunk($questions, 10);
         $allVerified = [];
         $hasError = false;
+        $provider = config('services.ai.provider', 'gemini');
 
         foreach ($chunks as $chunk) {
-            $verifiedChunk = self::verifyQuestionsBatch($chunk, $dbCandidates, $apiKey);
+            if ($provider === 'groq') {
+                $verifiedChunk = self::verifyGroqQuestionsBatch($chunk, $dbCandidates, $apiKey);
+            } else {
+                $verifiedChunk = self::verifyGeminiQuestionsBatch($chunk, $dbCandidates, $apiKey);
+            }
+
             if ($verifiedChunk === null) {
                 $hasError = true;
                 break;
@@ -617,11 +626,8 @@ class AIService
     /**
      * Call Gemini API to verify a single batch of questions.
      */
-    private static function verifyQuestionsBatch(array $questions, array $dbCandidates, string $apiKey): ?array
+    private static function verifyGeminiQuestionsBatch(array $questions, array $dbCandidates, string $apiKey): ?array
     {
-        if (config('services.ai.provider') === 'deepseek') {
-            return self::verifyDeepSeekQuestionsBatch($questions, $dbCandidates, $apiKey);
-        }
 
         try {
             $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
@@ -710,11 +716,11 @@ class AIService
     }
 
     /**
-     * Call DeepSeek API to generate N structured questions inside a single JSON array response.
+     * Call Groq API to generate N structured questions inside a single JSON array response.
      */
-    private static function callDeepSeekApiBatch(string $categoryName, string $level, int $batchCount, string $apiKey, array $inProgressTexts = []): ?array
+    private static function callGroqApiBatch(string $categoryName, string $level, int $batchCount, string $apiKey, array $inProgressTexts = []): ?array
     {
-        $url = "https://api.deepseek.com/chat/completions";
+        $url = "https://api.groq.com/openai/v1/chat/completions";
 
         $syllabusGuideline = "";
         $formattedLevel = $level === 'professional' ? 'Professional' : 'Sub-Professional';
@@ -812,7 +818,7 @@ class AIService
                   "8. CRITICAL: DO NOT prefix options in the 'options' array with letter headers (like 'A.', 'a.', 'B.', 'b.', '1.', etc.). Options must be pure, clean strings.";
 
         $body = [
-            'model' => 'deepseek-chat',
+            'model' => config('services.ai.model', 'llama-3.3-70b-versatile'),
             'messages' => [
                 ['role' => 'user', 'content' => $prompt]
             ],
@@ -852,20 +858,20 @@ class AIService
 
         if ($response->status() === 429) {
             \App\Models\Setting::set('ai_quota_exceeded_flag', '1');
-            \App\Models\Setting::set('ai_last_error', '429 Quota Exceeded on DeepSeek API.');
+            \App\Models\Setting::set('ai_last_error', '429 Quota Exceeded on Groq API.');
         } else if ($response->failed()) {
-            \App\Models\Setting::set('ai_last_error', 'DeepSeek API call failed with status ' . $response->status() . ': ' . $response->body());
+            \App\Models\Setting::set('ai_last_error', 'Groq API call failed with status ' . $response->status() . ': ' . $response->body());
         }
 
         return null;
     }
 
     /**
-     * Call DeepSeek API to verify a single batch of questions.
+     * Call Groq API to verify a single batch of questions.
      */
-    private static function verifyDeepSeekQuestionsBatch(array $questions, array $dbCandidates, string $apiKey): ?array
+    private static function verifyGroqQuestionsBatch(array $questions, array $dbCandidates, string $apiKey): ?array
     {
-        $url = "https://api.deepseek.com/chat/completions";
+        $url = "https://api.groq.com/openai/v1/chat/completions";
 
         $candidatesText = "";
         if (!empty($dbCandidates)) {
@@ -887,7 +893,7 @@ class AIService
                   "Return the verified questions as a JSON object containing a 'questions' key which is an array of objects matching the required schema. Ensure you retain the 'problem_type_tag' of each question in the output.";
 
         $body = [
-            'model' => 'deepseek-chat',
+            'model' => config('services.ai.model', 'llama-3.3-70b-versatile'),
             'messages' => [
                 ['role' => 'user', 'content' => $prompt]
             ],
@@ -925,9 +931,9 @@ class AIService
 
         if ($response->status() === 429) {
             \App\Models\Setting::set('ai_quota_exceeded_flag', '1');
-            \App\Models\Setting::set('ai_last_error', '429 Quota Exceeded on DeepSeek API.');
+            \App\Models\Setting::set('ai_last_error', '429 Quota Exceeded on Groq API.');
         } else if ($response->failed()) {
-            \App\Models\Setting::set('ai_last_error', 'DeepSeek API verification call failed with status ' . $response->status() . ': ' . $response->body());
+            \App\Models\Setting::set('ai_last_error', 'Groq API verification call failed with status ' . $response->status() . ': ' . $response->body());
         }
 
         return null;
@@ -950,8 +956,19 @@ class AIService
                 $normalized['question_text'] = '';
             }
 
-            // Map options
-            $normalized['options'] = $q['options'] ?? [];
+            // Map options - ensure they are always flat strings
+            $rawOptions = $q['options'] ?? [];
+            $cleanOptions = [];
+            foreach ($rawOptions as $opt) {
+                if (is_array($opt)) {
+                    $cleanOptions[] = (string)($opt['option_text'] ?? $opt['text'] ?? $opt['option'] ?? $opt['value'] ?? json_encode($opt));
+                } else if (is_object($opt)) {
+                    $cleanOptions[] = (string)($opt->option_text ?? $opt->text ?? $opt->option ?? $opt->value ?? json_encode($opt));
+                } else {
+                    $cleanOptions[] = (string)$opt;
+                }
+            }
+            $normalized['options'] = $cleanOptions;
 
             // Map correct option index
             if (isset($q['correct_option_index'])) {
@@ -998,8 +1015,8 @@ class AIService
             return null;
         }
 
-        if (config('services.ai.provider') === 'deepseek') {
-            return self::suggestFixDeepSeek($question, $apiKey);
+        if (config('services.ai.provider') === 'groq') {
+            return self::suggestFixGroq($question, $apiKey);
         }
 
         return self::suggestFixGemini($question, $apiKey);
@@ -1087,10 +1104,10 @@ class AIService
         return null;
     }
 
-    private static function suggestFixDeepSeek(\App\Models\Question $question, string $apiKey): ?array
+    private static function suggestFixGroq(\App\Models\Question $question, string $apiKey): ?array
     {
         try {
-            $url = "https://api.deepseek.com/chat/completions";
+            $url = "https://api.groq.com/openai/v1/chat/completions";
 
             $optionsText = "";
             foreach ($question->options as $idx => $opt) {
@@ -1117,7 +1134,7 @@ class AIService
                       "6. Return the response as a JSON object containing keys: 'question_text', 'options' (array of 4 strings), 'correct_option_index' (integer 0-3), 'explanation', and 'problem_type_tag'.";
 
             $body = [
-                'model' => 'deepseek-chat',
+                'model' => config('services.ai.model', 'llama-3.3-70b-versatile'),
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt]
                 ],
@@ -1145,7 +1162,7 @@ class AIService
                 }
             }
         } catch (\Exception $e) {
-            Log::error('DeepSeek suggestFix failed: ' . $e->getMessage());
+            Log::error('Groq suggestFix failed: ' . $e->getMessage());
         }
 
         return null;

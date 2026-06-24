@@ -38,6 +38,7 @@ return [
     'ai' => [
         'provider' => env('AI_PROVIDER', 'gemini'),
         'key' => env('AI_API_KEY'),
+        'model' => env('GROQ_MODEL', 'llama-3.3-70b-versatile'),
     ],
 
 ];

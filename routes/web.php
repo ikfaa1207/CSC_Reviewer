@@ -41,7 +41,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/admin/questions/clean-duplicates', [AdminQuestionController::class, 'cleanDuplicates'])->name('admin.questions.cleanDuplicates');
     Route::post('/admin/questions/run-audit', [AdminQuestionController::class, 'runAudit'])->name('admin.questions.runAudit');
     Route::post('/admin/questions/bulk-fix-audit', [AdminQuestionController::class, 'bulkFixAudit'])->name('admin.questions.bulkFixAudit');
-    Route::post('/admin/questions/reset-ai-usage', [AdminQuestionController::class, 'resetAIUsage'])->name('admin.questions.resetAIUsage');
     Route::put('/admin/questions/{question}', [AdminQuestionController::class, 'update'])->name('admin.questions.update');
     Route::post('/admin/questions/{question}/suggest-fix', [AdminQuestionController::class, 'suggestFix'])->name('admin.questions.suggestFix');
     Route::delete('/admin/questions/bulk-delete', [AdminQuestionController::class, 'bulkDestroy'])->name('admin.questions.bulkDestroy');
