@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\AI\QuestionNormalizer;
 use Illuminate\Database\Eloquent\Model;
 
 class Question extends Model
@@ -18,26 +19,20 @@ class Question extends Model
 
     /**
      * Normalize question text for duplicate detection.
-     * Strips Variation ID tag, removes punctuation, collapses whitespace, lowercases.
+     * Delegates to QuestionNormalizer service.
      */
     public static function normalize(string $text): string
     {
-        // Strip "(Variation ID: N)" tags
-        $text = preg_replace('/\s*\(Variation ID:\s*\d+\)/i', '', $text);
-        // Remove punctuation (keep alphanumeric and spaces)
-        $text = preg_replace('/[^a-zA-Z0-9\s]/', '', $text);
-        // Collapse multiple whitespace into single space and trim
-        $text = trim(preg_replace('/\s+/', ' ', $text));
-        // Lowercase
-        return strtolower($text);
+        return QuestionNormalizer::normalize($text);
     }
 
     /**
      * Compute a 32-char MD5 hash from normalized question text.
+     * Delegates to QuestionNormalizer service.
      */
     public static function computeHash(string $text): string
     {
-        return md5(self::normalize($text));
+        return QuestionNormalizer::computeHash($text);
     }
 
     /**

@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\AdminQuestionController;
+use App\Http\Controllers\JobStatusController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -45,6 +46,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/admin/questions/{question}/suggest-fix', [AdminQuestionController::class, 'suggestFix'])->name('admin.questions.suggestFix');
     Route::delete('/admin/questions/bulk-delete', [AdminQuestionController::class, 'bulkDestroy'])->name('admin.questions.bulkDestroy');
     Route::delete('/admin/questions/{question}', [AdminQuestionController::class, 'destroy'])->name('admin.questions.destroy');
+
+    // Job status and background processing routes
+    Route::get('/admin/jobs/dashboard', [JobStatusController::class, 'dashboard'])->name('admin.jobs.dashboard');
+    Route::get('/admin/jobs', [JobStatusController::class, 'index'])->name('admin.jobs.index');
+    Route::get('/admin/jobs/recent', [JobStatusController::class, 'recent'])->name('admin.jobs.recent');
+    Route::get('/admin/jobs/{jobId}', [JobStatusController::class, 'show'])->name('admin.jobs.show');
+    Route::post('/admin/jobs/{jobId}/cancel', [JobStatusController::class, 'cancel'])->name('admin.jobs.cancel');
+    Route::post('/admin/jobs/{jobId}/retry', [JobStatusController::class, 'retry'])->name('admin.jobs.retry');
+    Route::get('/admin/jobs/stats', [JobStatusController::class, 'stats'])->name('admin.jobs.stats');
 });
 
 require __DIR__.'/auth.php';
