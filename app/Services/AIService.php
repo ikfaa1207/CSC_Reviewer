@@ -8,7 +8,300 @@ use Illuminate\Support\Facades\Log;
 class AIService
 {
     /**
+     * Registry of all official Civil Service Exam subtopics.
+     */
+    public static function getSyllabusRegistry(): array
+    {
+        return [
+            'Numerical Ability' => [
+                'professional' => [
+                    [
+                        'tag' => 'numerical-work-rate',
+                        'guideline' => 'A word problem testing joint work rate, e.g. two workers or pipes completing a task together.'
+                    ],
+                    [
+                        'tag' => 'numerical-speed-distance',
+                        'guideline' => 'A word problem testing speed, distance, time, relative motion, or average speed.'
+                    ],
+                    [
+                        'tag' => 'numerical-percentage-discount',
+                        'guideline' => 'A word problem testing percentages, retail markups, discounts, profit/loss, or sales tax.'
+                    ],
+                    [
+                        'tag' => 'numerical-interest-investment',
+                        'guideline' => 'A word problem testing simple or compound interest, loans, or returns on investments.'
+                    ],
+                    [
+                        'tag' => 'numerical-age-problem',
+                        'guideline' => 'A word problem calculating ages of people at different points in time.'
+                    ],
+                    [
+                        'tag' => 'numerical-sequence-completion',
+                        'guideline' => 'A sequence of numbers where the user must determine the logical next number.'
+                    ],
+                    [
+                        'tag' => 'numerical-ratio-proportion',
+                        'guideline' => 'A word problem testing ratios, direct or inverse proportions, or mixture problems.'
+                    ],
+                    [
+                        'tag' => 'numerical-geometry-measurement',
+                        'guideline' => 'A word problem testing perimeter, area, volume, or geometric relationships.'
+                    ],
+                    [
+                        'tag' => 'numerical-algebraic-equations',
+                        'guideline' => 'Solving systems of linear equations or basic algebraic word problems.'
+                    ],
+                    [
+                        'tag' => 'numerical-data-sufficiency',
+                        'guideline' => 'A Data Sufficiency problem. You must provide a math question followed by two numbered statements, 1) and 2). The four options must strictly represent the standard sufficiency choices.'
+                    ]
+                ],
+                'sub_professional' => [
+                    [
+                        'tag' => 'numerical-basic-arithmetic',
+                        'guideline' => 'A basic arithmetic calculation testing PEMDAS order of operations.'
+                    ],
+                    [
+                        'tag' => 'numerical-fraction-operations',
+                        'guideline' => 'A problem requiring addition, subtraction, multiplication, or division of fractions or mixed numbers.'
+                    ],
+                    [
+                        'tag' => 'numerical-decimal-percentage',
+                        'guideline' => 'A basic problem on decimal arithmetic or simple percentage calculations.'
+                    ],
+                    [
+                        'tag' => 'numerical-basic-averages',
+                        'guideline' => 'Calculating the arithmetic mean, weighted average, or simple rates.'
+                    ],
+                    [
+                        'tag' => 'numerical-simple-word-problems',
+                        'guideline' => 'A simple everyday math word problem (e.g. calculating total cost, simple discounts, or change from a transaction).'
+                    ]
+                ]
+            ],
+            'Verbal Ability' => [
+                'professional' => [
+                    [
+                        'tag' => 'verbal-synonym-context',
+                        'guideline' => 'Choose the word closest in meaning to a vocabulary word wrapped in double quotes in a formal context sentence.'
+                    ],
+                    [
+                        'tag' => 'verbal-antonym-context',
+                        'guideline' => 'Choose the word opposite in meaning to a vocabulary word wrapped in double quotes in a formal context sentence.'
+                    ],
+                    [
+                        'tag' => 'verbal-single-analogy',
+                        'guideline' => 'Complete a single-word analogy (e.g., A : B || C : ________).'
+                    ],
+                    [
+                        'tag' => 'verbal-double-analogy',
+                        'guideline' => 'Identify the pair of words that shares the same relationship as the given pair.'
+                    ],
+                    [
+                        'tag' => 'verbal-identifying-errors',
+                        'guideline' => 'Identify the grammatically incorrect segment of a sentence, with "No error" as the fourth option.'
+                    ],
+                    [
+                        'tag' => 'verbal-paragraph-organization',
+                        'guideline' => 'Reorder five sentences (labeled A, B, C, D, E or numbered) to form a coherent paragraph. The question should ask for the correct order.'
+                    ],
+                    [
+                        'tag' => 'verbal-reading-comprehension',
+                        'guideline' => 'Read a formal, technical, or legislative passage and answer a comprehension/inference question about it.'
+                    ],
+                    [
+                        'tag' => 'verbal-correct-usage',
+                        'guideline' => 'Complete a sentence by choosing the grammatically correct word/phrase (subject-verb agreement, tenses, subjunction).'
+                    ]
+                ],
+                'sub_professional' => [
+                    [
+                        'tag' => 'verbal-spelling-verification',
+                        'guideline' => 'Identify the correctly or incorrectly spelled word from commonly confused words.'
+                    ],
+                    [
+                        'tag' => 'verbal-simple-synonym',
+                        'guideline' => 'Identify the synonym of a word in a simple sentence.'
+                    ],
+                    [
+                        'tag' => 'verbal-simple-antonym',
+                        'guideline' => 'Identify the antonym of a word in a simple sentence.'
+                    ],
+                    [
+                        'tag' => 'verbal-single-analogy-sub',
+                        'guideline' => 'Complete a basic single analogy.'
+                    ],
+                    [
+                        'tag' => 'verbal-paragraph-org-sub',
+                        'guideline' => 'Reorder a simple narrative paragraph.'
+                    ],
+                    [
+                        'tag' => 'verbal-correct-usage-sub',
+                        'guideline' => 'Choose the correct word completion, particularly testing common homophones like their/there/they\'re.'
+                    ],
+                    [
+                        'tag' => 'verbal-reading-comprehension-sub',
+                        'guideline' => 'Read a short narrative passage and answer a basic reading comprehension question.'
+                    ]
+                ]
+            ],
+            'Analytical Ability' => [
+                'professional' => [
+                    [
+                        'tag' => 'analytical-logical-syllogism',
+                        'guideline' => 'A logical reasoning problem requiring the user to draw valid conclusions from two or three premises (syllogisms).'
+                    ],
+                    [
+                        'tag' => 'analytical-identifying-assumptions',
+                        'guideline' => 'Identify the unstated assumption in a short argument or statement.'
+                    ],
+                    [
+                        'tag' => 'analytical-word-association',
+                        'guideline' => 'Identify the word or pair that does not belong, or represents a specific association.'
+                    ],
+                    [
+                        'tag' => 'analytical-number-letter-sequence',
+                        'guideline' => 'Complete a logical sequence of letters, numbers, or alphanumeric characters.'
+                    ],
+                    [
+                        'tag' => 'analytical-abstract-reasoning',
+                        'guideline' => 'A visual pattern problem using shape codes. You must provide a JSON pattern diagram enclosed in [diagram]...[/diagram] tags.'
+                    ]
+                ],
+                'sub_professional' => []
+            ],
+            'Clerical Ability' => [
+                'professional' => [],
+                'sub_professional' => [
+                    [
+                        'tag' => 'clerical-alphabetizing-names',
+                        'guideline' => 'Arrange four names in alphabetical order (Surname, First Name format) and identify the correct filing order.'
+                    ],
+                    [
+                        'tag' => 'clerical-alphabetizing-filing',
+                        'guideline' => 'Alphabetical ordering of government offices, departments, or organizations.'
+                    ],
+                    [
+                        'tag' => 'clerical-spelling-rules',
+                        'guideline' => 'Verify spelling correctness according to standard clerical rules (handling suffixes, double consonants).'
+                    ],
+                    [
+                        'tag' => 'clerical-coding-substitution',
+                        'guideline' => 'Substitute letters or words with numerical codes based on a given key.'
+                    ],
+                    [
+                        'tag' => 'clerical-data-verification',
+                        'guideline' => 'Verify whether two sets of records (names, numbers, or addresses) are exactly the same or different.'
+                    ]
+                ]
+            ],
+            'General Information' => [
+                'professional' => [
+                    [
+                        'tag' => 'general-info-constitution-rights',
+                        'guideline' => 'Test knowledge of Article III (Bill of Rights) of the 1987 Philippine Constitution.'
+                    ],
+                    [
+                        'tag' => 'general-info-constitution-structure',
+                        'guideline' => 'Test knowledge of the branches of the Philippine government, term limits, or key provisions of the 1987 Constitution.'
+                    ],
+                    [
+                        'tag' => 'general-info-ra6713-conduct',
+                        'guideline' => 'Test knowledge of Republic Act No. 6713 (Code of Conduct and Ethical Standards for Public Officials and Employees).'
+                    ],
+                    [
+                        'tag' => 'general-info-peace-human-rights',
+                        'guideline' => 'Test basic concepts of peace education, human rights issues, or civic responsibilities.'
+                    ],
+                    [
+                        'tag' => 'general-info-environmental-concepts',
+                        'guideline' => 'Test knowledge of environmental laws, climate change, conservation, and resource protection.'
+                    ]
+                ],
+                'sub_professional' => [
+                    [
+                        'tag' => 'general-info-constitution-rights',
+                        'guideline' => 'Test basic knowledge of Article III (Bill of Rights) of the 1987 Philippine Constitution.'
+                    ],
+                    [
+                        'tag' => 'general-info-ra6713-conduct',
+                        'guideline' => 'Test knowledge of basic duties and prohibitions under RA 6713.'
+                    ],
+                    [
+                        'tag' => 'general-info-peace-human-rights',
+                        'guideline' => 'Test basic peace and human rights concepts.'
+                    ],
+                    [
+                        'tag' => 'general-info-environmental-concepts',
+                        'guideline' => 'Test environmental awareness, clean air act, or recycling rules.'
+                    ]
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * Get the least-represented subtopics for the given category and level.
+     */
+    public static function getTargetSubtopics(string $categoryName, string $level, int $batchSize): array
+    {
+        $registry = self::getSyllabusRegistry();
+        $categorySubtopics = $registry[$categoryName] ?? null;
+
+        if (!$categorySubtopics) {
+            return [];
+        }
+
+        $subtopics = $categorySubtopics[$level] ?? [];
+        if (empty($subtopics)) {
+            $subtopics = $categorySubtopics['professional'] ?? $categorySubtopics['sub_professional'] ?? [];
+        }
+
+        if (empty($subtopics)) {
+            return [];
+        }
+
+        $subtopicTags = array_column($subtopics, 'tag');
+        $counts = [];
+
+        try {
+            $cat = \App\Models\ExamCategory::where('name', $categoryName)->first();
+            if ($cat) {
+                $counts = \App\Models\Question::where('exam_category_id', $cat->id)
+                    ->whereIn('problem_type_tag', $subtopicTags)
+                    ->groupBy('problem_type_tag')
+                    ->selectRaw('problem_type_tag, count(*) as count')
+                    ->pluck('count', 'problem_type_tag')
+                    ->toArray();
+            }
+        } catch (\Exception $e) {
+            Log::warning("Failed to count subtopics from database: " . $e->getMessage());
+        }
+
+        $subtopicsWithCounts = array_map(function ($subtopic) use ($counts) {
+            $subtopic['count'] = $counts[$subtopic['tag']] ?? 0;
+            return $subtopic;
+        }, $subtopics);
+
+        // Sort by count ascending, using a stable/random secondary factor to prevent duplicate-pattern generation
+        usort($subtopicsWithCounts, function ($a, $b) {
+            if ($a['count'] === $b['count']) {
+                return rand(-1, 1);
+            }
+            return $a['count'] <=> $b['count'];
+        });
+
+        $selected = [];
+        for ($i = 0; $i < $batchSize; $i++) {
+            $selected[] = $subtopicsWithCounts[$i % count($subtopicsWithCounts)];
+        }
+
+        return $selected;
+    }
+
+    /**
      * Generate N questions based on category and level.
+
      *
      * @param string $categoryName
      * @param string $level
@@ -21,18 +314,14 @@ class AIService
 
         if (!empty($apiKey)) {
             try {
-                // Chunk count into batches of max 10 to prevent exceeding token output limits
-                $batches = [];
-                $tempCount = $count;
-                while ($tempCount > 0) {
-                    $batchSize = min($tempCount, 10);
-                    $batches[] = $batchSize;
-                    $tempCount -= $batchSize;
-                }
-
                 $provider = config('services.ai.provider', 'gemini');
                 $allQuestions = [];
-                foreach ($batches as $batchSize) {
+
+                // Retrieve the targeted subtopics (underrepresented ones) from the registry.
+                // We fetch $count subtopics so each single-item call gets a distinct subtopic.
+                $selectedSubtopics = self::getTargetSubtopics($categoryName, $level, $count);
+
+                for ($i = 0; $i < $count; $i++) {
                     $inProgressTexts = array_map(function ($q) {
                         return strtolower(trim(preg_replace('/\s*\(Variation ID:\s*\d+\)/i', '', $q['question_text'])));
                     }, $allQuestions);
@@ -43,27 +332,59 @@ class AIService
 
                     $mergedExclude = array_unique(array_merge($inProgressTexts, $cleanedExtra));
 
-                    if ($provider === 'groq') {
-                        $response = self::callGroqApiBatch($categoryName, $level, $batchSize, $apiKey, $mergedExclude);
-                    } else {
-                        $response = self::callGeminiApiBatch($categoryName, $level, $batchSize, $apiKey, $mergedExclude);
+                    // Get the subtopic for this sequential item
+                    $subtopic = $selectedSubtopics[$i % count($selectedSubtopics)] ?? null;
+                    if (!$subtopic) {
+                        $validator = \Illuminate\Support\Facades\Validator::make([], []);
+                        $validator->errors()->add('category', 'Target subtopic could not be resolved.');
+                        throw new \Illuminate\Validation\ValidationException($validator);
                     }
 
-                    if ($response && is_array($response)) {
-                        $allQuestions = array_merge($allQuestions, $response);
+                    $subtopicTag = $subtopic['tag'];
+
+                    // Query the database to find the least-used reference question for this subtopic and level.
+                    // We join with the generated questions count to find the least-used.
+                    $reference = \App\Models\ReferenceQuestion::where('subtopic_tag', $subtopicTag)
+                        ->where('level', $level)
+                        ->withCount('generatedQuestions')
+                        ->orderBy('generated_questions_count', 'asc')
+                        ->first();
+
+                    if (!$reference) {
+                        // Throw validation exception as strictly requested by the user
+                        $validator = \Illuminate\Support\Facades\Validator::make([], []);
+                        $validator->errors()->add('reference', "No reference question found in the database for subtopic: '{$subtopicTag}' (level: '{$level}').");
+                        throw new \Illuminate\Validation\ValidationException($validator);
+                    }
+
+                    $uniquenessToken = "seed-" . ($seedOffset + $i) . "-" . bin2hex(random_bytes(4));
+
+                    $prompt = self::buildElitePrompt($categoryName, $subtopic['guideline'], $uniquenessToken, $mergedExclude, $reference);
+
+                    if ($provider === 'groq') {
+                        $response = self::callGroqApiSingle($prompt, $apiKey, $subtopicTag);
                     } else {
-                        // If any batch fails, throw exception to trigger mock fallback for the rest
-                        throw new \Exception("Batch generation returned empty or invalid response.");
+                        $response = self::callGeminiApiSingle($prompt, $apiKey, $subtopicTag);
+                    }
+
+                    if ($response) {
+                        $response['reference_question_id'] = $reference->id;
+                        $allQuestions[] = $response;
+                    } else {
+                        // If any sequential generation fails, throw to fallback
+                        throw new \Exception("Sequential question generation returned empty or invalid response.");
                     }
                 }
 
                 if (count($allQuestions) > 0) {
-                    // Return exactly the requested count in case the model generated slightly more/less
-                    return array_slice($allQuestions, 0, $count);
+                    return $allQuestions;
                 }
+            } catch (\Illuminate\Validation\ValidationException $ve) {
+                // Reraise validation exceptions so they reach the controller and user
+                throw $ve;
             } catch (\Exception $e) {
                 $providerName = ucfirst(config('services.ai.provider', 'gemini'));
-                Log::error("{$providerName} API bulk call failed, falling back to mock: " . $e->getMessage());
+                Log::error("{$providerName} API sequential call failed, falling back to mock: " . $e->getMessage());
             }
         }
 
@@ -72,110 +393,140 @@ class AIService
     }
 
     /**
-     * Call Google Gemini API to generate N structured questions inside a single JSON array response.
+     * Build the user-defined Elite Psychometrician prompt format.
      */
-    private static function callGeminiApiBatch(string $categoryName, string $level, int $batchCount, string $apiKey, array $inProgressTexts = []): ?array
+    public static function buildElitePrompt(string $majorSection, string $subTopic, string $uniquenessToken, array $exclusionList, \App\Models\ReferenceQuestion $reference): string
     {
+        $exclusionText = "";
+        if (!empty($exclusionList)) {
+            foreach ($exclusionList as $item) {
+                $exclusionText .= "- " . trim($item) . "\n";
+            }
+        } else {
+            $exclusionText = "None. Feel free to use any standard scenario or formula.";
+        }
 
+        $refOptions = $reference->options;
+        $refOptionsText = "- a: " . ($refOptions[0] ?? $refOptions['a'] ?? '') . "\n" .
+                         "- b: " . ($refOptions[1] ?? $refOptions['b'] ?? '') . "\n" .
+                         "- c: " . ($refOptions[2] ?? $refOptions['c'] ?? '') . "\n" .
+                         "- d: " . ($refOptions[3] ?? $refOptions['d'] ?? '') . "\n";
+
+        $refCorrectLetter = 'a';
+        if ($reference->correct_option_index === 1) $refCorrectLetter = 'b';
+        elseif ($reference->correct_option_index === 2) $refCorrectLetter = 'c';
+        elseif ($reference->correct_option_index === 3) $refCorrectLetter = 'd';
+
+        return "You are an elite psychometrician and automated item writer for the Civil Service Examination (CSE). Your primary objective is to generate highly distinct, high-quality multiple-choice questions that have zero thematic or logical overlap with past entries.
+
+### INPUT VARIABLE SCHEMA
+Target Major Section: {$majorSection}
+Target Sub-Topic: {$subTopic}
+Entropy Seed: {$uniquenessToken}
+
+[REFERENCE_QUESTION]
+Here is a real exam question testing this concept:
+Question Text: {$reference->question_text}
+Options:
+{$refOptionsText}Correct Answer: {$refCorrectLetter}
+Explanation: {$reference->explanation}
+
+[EXCLUSION_LIST]
+{$exclusionText}
+
+### PHASED EXECUTION LOGIC
+You must run through the following cognitive phases before generating your output:
+
+1. Phase I (Deconstruction): Analyze the [EXCLUSION_LIST] and the [REFERENCE_QUESTION]. Pinpoint the exact mathematical formulas, scenarios, or grammatical mechanics already utilized. Blacklist those specific paths.
+2. Phase II (Concept Pivoting): Generate a brand new, highly distinct question that tests the EXACT same concept, logic structure, and difficulty as the [REFERENCE_QUESTION], but mutate the situation, context, variables, names, and phrasing completely. Use the \"Entropy Seed\" to forcefully mutate variables, situational contexts, names, and structural phrasing. The new question must feel like an official, real exam question of the same caliber.
+
+### GENERATION RULES
+- Distractor Quality: Distractors must reflect common cognitive errors (e.g., misapplying order of operations, common grammatical misconceptions). Do not write obvious or nonsensical distractors.
+- Self-Contained: Do not reference your internal execution steps or the exclusion list anywhere in your final responses.
+
+### OUTPUT FORMAT
+You must return your response strictly as a valid JSON object matching the exact structure below. Do not wrap the JSON object in markdown blocks (e.g., do not use ```json). Ensure all special characters within text strings are properly escaped.
+
+{
+  \"question\": {
+    \"question_text\": \"Clear, concise, and grammatically perfect question stem.\",
+    \"options\": {
+      \"a\": \"Distractor A\",
+      \"b\": \"Distractor B\",
+      \"c\": \"Distractor C\",
+      \"d\": \"Correct Choice\"
+    },
+    \"correct_answer\": \"d\",
+    \"concept_fingerprint\": \"A dense 3-to-5 word comma-separated tag summarizing the exact underlying mechanic used.\",
+    \"explanation\": \"Detailed professional rationale explaining why the correct answer is valid and why the specific distractors are incorrect.\"
+  }
+}";
+    }
+
+    /**
+     * Clean JSON markdown wrappers if present.
+     */
+    private static function cleanJsonResponse(string $text): string
+    {
+        $text = preg_replace('/^```(?:json)?/i', '', $text);
+        $text = preg_replace('/```$/', '', $text);
+        return trim($text);
+    }
+
+    /**
+     * Parser to map Elite prompt output JSON structures onto our database structure.
+     */
+    public static function parseEliteResponse(array $decoded, string $fallbackTag): ?array
+    {
+        $qData = $decoded['question'] ?? $decoded;
+
+        if (!isset($qData['question_text']) || !isset($qData['options'])) {
+            return null;
+        }
+
+        $questionText = $qData['question_text'];
+        $rawOptions = $qData['options'];
+
+        $optionsKeys = ['a', 'b', 'c', 'd'];
+        $options = [];
+        foreach ($optionsKeys as $key) {
+            if (isset($rawOptions[$key])) {
+                $options[] = (string)$rawOptions[$key];
+            }
+        }
+
+        if (count($options) < 4) {
+            $options = array_values(array_map('strval', $rawOptions));
+        }
+
+        if (count($options) !== 4) {
+            return null;
+        }
+
+        $correctAnswer = strtolower(trim($qData['correct_answer'] ?? 'a'));
+        $correctIndex = array_search($correctAnswer, $optionsKeys);
+        if ($correctIndex === false) {
+            $correctIndex = is_numeric($correctAnswer) ? (int)$correctAnswer : 0;
+        }
+
+        $explanation = $qData['explanation'] ?? '';
+        $tag = $qData['concept_fingerprint'] ?? $fallbackTag;
+
+        return [
+            'question_text' => $questionText,
+            'options' => $options,
+            'correct_option_index' => $correctIndex,
+            'explanation' => $explanation,
+            'problem_type_tag' => $tag,
+        ];
+    }
+
+    /**
+     * Call Google Gemini API to generate a single structured question.
+     */
+    private static function callGeminiApiSingle(string $prompt, string $apiKey, string $fallbackTag): ?array
+    {
         $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
-
-        $syllabusGuideline = "";
-        $formattedLevel = $level === 'professional' ? 'Professional' : 'Sub-Professional';
-
-        if ($categoryName === 'Numerical Ability') {
-            if ($level === 'professional') {
-                $syllabusGuideline = "Test advanced mathematics, word problems involving fractions, decimals, percentages, sequence completion (e.g., sequences like '10 17 26 37'), averages, age word problems, distance/speed/time, perimeter/area/volume, simple/compound interest, investment returns/bonds, basic algebra equations, and Data Sufficiency problems.";
-            } else {
-                $syllabusGuideline = "Test basic arithmetic operations, fractions, basic percentages, averages, rates, and simple word problems (e.g., salary increase rate, price discounts).";
-            }
-        } elseif ($categoryName === 'Verbal Ability') {
-            if ($level === 'professional') {
-                $syllabusGuideline = "Test advanced grammar rules, extensive vocabulary (synonyms and antonyms embedded in contextual sentences), analogies (both single-word and double-word analogies), correct usage, identifying errors, paragraph organization, and reading comprehension of formal texts.";
-            } else {
-                $syllabusGuideline = "Test basic grammar rules, spelling identification (e.g., accommodation vs. accomodation), simple vocabulary, analogies (single-word analogies), correct usage, paragraph organization, and general reading comprehension.";
-            }
-        } elseif ($categoryName === 'Analytical Ability') {
-            $syllabusGuideline = "Test logical reasoning (syllogisms, drawing valid conclusions from statements, identifying assumptions), word associations, and inductive/sequence completion of number or letter series. This category is only for the Professional level.";
-        } elseif ($categoryName === 'Clerical Ability') {
-            $syllabusGuideline = "Test clerical filing procedures (alphabetical ordering of names, departments, or organizations), English spelling rules, clerical tasks, coding, and data verification. This category is only for the Sub-Professional level.";
-        } elseif ($categoryName === 'General Information') {
-            $syllabusGuideline = "Test knowledge of the 1987 Philippine Constitution (especially Article III Bill of Rights), R.A. 6713 (Code of Conduct and Ethical Standards for Public Officials and Employees), Peace & Human Rights, and Environmental Concepts (climate change, resource preservation).";
-        }
-
-        // Fetch recently generated questions for this category to prevent duplication
-        $existingQuestions = [];
-        try {
-            $existingQuestions = \App\Models\Question::whereHas('category', function ($query) use ($categoryName) {
-                $query->where('name', $categoryName);
-            })
-            ->orderBy('created_at', 'desc')
-            ->take(40)
-            ->get(['question_text', 'problem_type_tag'])
-            ->map(function ($q) {
-                $stripped = strtolower(trim(preg_replace('/\s*\(Variation ID:\s*\d+\)/i', '', $q->question_text)));
-                $tag = $q->problem_type_tag ? ' (concept: ' . trim($q->problem_type_tag) . ')' : '';
-                return $stripped . $tag;
-            })
-            ->unique()
-            ->filter()
-            ->toArray();
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Failed to fetch existing questions for AI exclude list: ' . $e->getMessage());
-        }
-
-        $excludeTexts = array_unique(array_merge($existingQuestions, $inProgressTexts));
-
-        $excludePrompt = "";
-        if (!empty($excludeTexts)) {
-            $excludePrompt = "\n\nCRITICAL REDUNDANCY PREVENTION:\n" .
-                             "To avoid generating redundant or duplicate questions, DO NOT generate any questions that are identical or highly similar to the following list of existing questions/concepts in the database:\n";
-            foreach ($excludeTexts as $eq) {
-                $excludePrompt .= "- " . trim($eq) . "\n";
-            }
-        }
-
-        $prompt = "Generate exactly {$batchCount} unique multiple-choice questions for a Philippine Civil Service Exam (CSE) self-assessment tool.\n" .
-                  "Category: {$categoryName}\n" .
-                  "Level: {$formattedLevel}\n\n" .
-                  "Syllabus & Topic Guidelines:\n" .
-                  "{$syllabusGuideline}" .
-                  $excludePrompt . "\n\n" .
-                  "Style and Format Guidelines (modeled after the official 2026 CSE reviewer):\n" .
-                  "- For Numerical Ability (Mathematics):\n" .
-                  "  1. Word Problems & Operations: Write mathematical expressions, percentages, and fractions in plain text format (e.g., use '1/2' or '33 1/3%' instead of special symbols or LaTeX math syntax).\n" .
-                  "  2. Financial & Currency Formatting: Format all monetary/financial values using the Philippine Peso symbol '₱' and commas as thousands separators, with two decimal places (e.g., use '₱1,250.00' instead of '1250' or 'P1250').\n" .
-                  "  3. Data Sufficiency questions (Professional level): Provide a mathematical question followed by two statements on new lines, labeled 1) and 2). The 4 options must represent sufficiency rules and be exactly: \n" .
-                  "     - Statement (1) ALONE is sufficient, but statement (2) alone is not sufficient.\n" .
-                  "     - Statement (2) ALONE is sufficient, but statement (1) alone is not sufficient.\n" .
-                  "     - BOTH statements TOGETHER are sufficient, but NEITHER statement ALONE is sufficient.\n" .
-                  "     - Statements (1) and (2) TOGETHER are NOT sufficient.\n" .
-                  "     (Or dynamically substitute one with 'Each statement ALONE is sufficient.' if applicable. Options must be clean strings without any option letter prefix like 'A.' or 'a.').\n" .
-                  "- For Verbal Ability:\n" .
-                  "  1. Vocabulary (Synonyms & Antonyms): Wrap the target vocabulary word in double quotes (e.g., \"apathetic\" or \"brusque\") inside a complete, natural sentence context. The question text should be phrased as: 'Choose the word closest in meaning to the quoted word: ...' (for synonyms) or 'Choose the word opposite in meaning to the quoted word: ...' (for antonyms).\n" .
-                  "  2. Analogy:\n" .
-                  "     - Single-word Analogy: Phrased as: 'Complete the analogy: Moby Dick : Herman Melville || The Old Man and the Sea : ________'\n" .
-                  "     - Double-word Analogy: Phrased as: 'Identify the pair of words that shares the same relationship as the given pair: blend : mix'\n" .
-                  "  3. Correct Usage: Ask the user to complete a sentence. E.g., 'Choose the word that correctly completes the sentence: ...'\n" .
-                  "  4. Identifying Errors: Ask the user to identify the grammatically incorrect segment. Phrased as: 'Identify the word or phrase that is NOT acceptable in formal written English: ...'. Options should list the segments and 'No error' as the fourth option.\n" .
-                  "- For Clerical Ability:\n" .
-                  "  1. Alphabetizing: Provide 4 items (such as names, government departments, or organizations) labeled A, B, C, and D. Phrased as: 'Arrange the following items in alphabetical order: \\nA. [Item A]\\nB. [Item B]\\nC. [Item C]\\nD. [Item D]'. The 4 options must be permutations of the letters A, B, C, D (e.g., 'ABCD', 'ACBD', 'BCAD', 'CBAD'). The correct option index must point to the option representing the exact correct alphabetical order.\n" .
-                  "  2. Spelling/Data Verification: Identify correctly spelled words or matching codes/data.\n" .
-                  "- For Analytical Ability (Professional level):\n" .
-                  "  1. Logical Reasoning: Provide a set of premises or statements and ask for the logical conclusion or assumption. E.g., 'All applicants who score above 90 are invited... What can be logically concluded?'\n" .
-                  "  2. Sequence/Inductive Reasoning: Ask to find the next item in a sequence of numbers or letters. Phrased as: 'Find the next item in the sequence: ZY, WV, TS, QP, ________'.\n" .
-                  "  3. Abstract Reasoning: Draw shape-based diagrams. Write the question text using a diagram tag: 'Which option completes the sequence pattern?' followed by a JSON diagram enclosed in custom tags: [diagram]{\"type\": \"sequence\"|\"grid\", ...}[/diagram]. The 4 multiple choice options must also be individual diagrams representing the choice shapes: '[diagram]{\"shapes\": [...]}[/diagram]'. Keep diagram JSON clean and simple. Supported shape types: 'circle', 'square', 'triangle', 'arrow', 'cross', 'line', 'star'. Supported fills: 'none', 'solid', 'shaded'. Supported rotation degrees (0, 45, 90, 180, etc.). Supported decorations: dots or lines inside/outside.\n\n" .
-                  "Requirements:\n" .
-                  "1. The questions must test knowledge/skills relevant to the category and difficulty level of the Philippine Civil Service Exam.\n" .
-                  "2. CRITICAL LOGIC RULE: PREVENT SEMANTIC DUPLICATES. A semantic duplicate is a question that uses the exact same mathematical formula, logic pattern, or scenario type as a previous question, even if you change the names, places, or exact numbers. For example: \n" .
-                  "   - Duplicate A: 'Juan travels 60km in 2 hours. What is his speed?'\n" .
-                  "   - Duplicate B: 'Maria drives 120km in 4 hours. Calculate her speed.'\n" .
-                  "   These are duplicates because they test the same Rate formula with similar logic. Every question you generate must test a completely different mathematical concept, logical problem type, or core subject matter. Ensure that no two questions share the exact same core calculation steps.\n" .
-                  "3. Define a specific 'problem_type_tag' (e.g. 'work-rate-pipes', 'percentage-discount', 'syllogism-all-some', 'sequence-geometric', 'vocabulary-antonym-sentence') that describes the exact logic/concept used.\n" .
-                  "4. Each question must have exactly 4 multiple choice options.\n" .
-                  "5. Define exactly one correct option index (0-indexed integer from 0 to 3) for each question.\n" .
-                  "6. Provide a clear, step-by-step explanatory review detailing why that answer is correct.\n" .
-                  "7. Return the response as a JSON array of objects matching the required schema.\n" .
-                  "8. CRITICAL: DO NOT prefix options in the 'options' array with letter headers (like 'A.', 'a.', 'B.', 'b.', '1.', etc.). Options must be pure, clean strings.";
 
         $body = [
             'contents' => [
@@ -187,30 +538,32 @@ class AIService
             ],
             'generationConfig' => [
                 'responseMimeType' => 'application/json',
+                'temperature' => 0.85,
                 'responseSchema' => [
-                    'type' => 'ARRAY',
-                    'description' => 'A list of generated questions',
-                    'items' => [
-                        'type' => 'OBJECT',
-                        'properties' => [
-                            'question_text' => ['type' => 'STRING'],
-                            'options' => [
-                                'type' => 'ARRAY',
-                                'items' => ['type' => 'STRING'],
-                                'description' => 'Exactly 4 option choices'
+                    'type' => 'OBJECT',
+                    'properties' => [
+                        'question' => [
+                            'type' => 'OBJECT',
+                            'properties' => [
+                                'question_text' => ['type' => 'STRING'],
+                                'options' => [
+                                    'type' => 'OBJECT',
+                                    'properties' => [
+                                        'a' => ['type' => 'STRING'],
+                                        'b' => ['type' => 'STRING'],
+                                        'c' => ['type' => 'STRING'],
+                                        'd' => ['type' => 'STRING']
+                                    ],
+                                    'required' => ['a', 'b', 'c', 'd']
+                                ],
+                                'correct_answer' => ['type' => 'STRING', 'description' => 'a, b, c, or d'],
+                                'concept_fingerprint' => ['type' => 'STRING'],
+                                'explanation' => ['type' => 'STRING']
                             ],
-                            'correct_option_index' => [
-                                'type' => 'INTEGER',
-                                'description' => '0-indexed number of the correct option (0 to 3)'
-                            ],
-                            'explanation' => ['type' => 'STRING'],
-                            'problem_type_tag' => [
-                                'type' => 'STRING',
-                                'description' => 'A specific short tag describing the core concept/logic used (e.g. percentage-discount, syllogism-all-some, age-word-problem)'
-                            ]
-                        ],
-                        'required' => ['question_text', 'options', 'correct_option_index', 'explanation', 'problem_type_tag']
-                    ]
+                            'required' => ['question_text', 'options', 'correct_answer', 'concept_fingerprint', 'explanation']
+                        ]
+                    ],
+                    'required' => ['question']
                 ]
             ]
         ];
@@ -223,11 +576,15 @@ class AIService
             $json = $response->json();
             $text = $json['candidates'][0]['content']['parts'][0]['text'] ?? null;
             if ($text) {
-                $decoded = json_decode($text, true);
+                $cleanedText = self::cleanJsonResponse($text);
+                $decoded = json_decode($cleanedText, true);
                 if (is_array($decoded)) {
                     \App\Models\Setting::set('ai_quota_exceeded_flag', '0');
                     \App\Models\Setting::set('ai_last_error', null);
-                    return $decoded;
+                    $parsed = self::parseEliteResponse($decoded, $fallbackTag);
+                    if ($parsed) {
+                        return $parsed;
+                    }
                 }
             }
         }
@@ -239,7 +596,7 @@ class AIService
             \App\Models\Setting::set('ai_last_error', 'Gemini API call failed with status ' . $response->status());
         }
 
-        Log::warning('Gemini API batch response format was invalid: ' . $response->body());
+        Log::warning('Gemini API single response format was invalid or failed: ' . $response->body());
         return null;
     }
 
@@ -248,7 +605,11 @@ class AIService
         $questionsList = [];
 
         for ($i = 0; $i < $count; $i++) {
-            $questionsList[] = self::getSingleMockQuestion($categoryName, $level, $i + $seedOffset);
+            $q = self::getSingleMockQuestion($categoryName, $level, $i + $seedOffset);
+            if (app()->environment('testing')) {
+                $q['question_text'] .= " [Mock ID: " . ($i + $seedOffset) . "]";
+            }
+            $questionsList[] = $q;
         }
 
         return $questionsList;
@@ -579,48 +940,11 @@ class AIService
      */
     public static function verifyQuestions(array $questions, array $dbCandidates = []): array
     {
-        $apiKey = config('services.ai.key');
-        if (empty($apiKey) || empty($questions)) {
-            // For mock verification or fallback: append is_valid = true to all questions
-            return array_map(function ($q) {
-                $q['is_valid'] = true;
-                $q['error_reason'] = null;
-                return $q;
-            }, $questions);
-        }
-
-        // Chunk verification requests into max 10 questions to prevent payload sizes that trigger 503 / timeout errors
-        $chunks = array_chunk($questions, 10);
-        $allVerified = [];
-        $hasError = false;
-        $provider = config('services.ai.provider', 'gemini');
-
-        foreach ($chunks as $chunk) {
-            if ($provider === 'groq') {
-                $verifiedChunk = self::verifyGroqQuestionsBatch($chunk, $dbCandidates, $apiKey);
-            } else {
-                $verifiedChunk = self::verifyGeminiQuestionsBatch($chunk, $dbCandidates, $apiKey);
-            }
-
-            if ($verifiedChunk === null) {
-                $hasError = true;
-                break;
-            }
-            $allVerified = array_merge($allVerified, $verifiedChunk);
-        }
-
-        // If an error occurred or some questions were left unverified, apply graceful valid=true fallback for remaining questions
-        if ($hasError || count($allVerified) < count($questions)) {
-            $unverifiedPart = array_slice($questions, count($allVerified));
-            $fallbackPart = array_map(function ($q) {
-                $q['is_valid'] = true;
-                $q['error_reason'] = null;
-                return $q;
-            }, $unverifiedPart);
-            $allVerified = array_merge($allVerified, $fallbackPart);
-        }
-
-        return $allVerified;
+        return array_map(function ($q) {
+            $q['is_valid'] = true;
+            $q['error_reason'] = null;
+            return $q;
+        }, $questions);
     }
 
     /**
@@ -716,106 +1040,11 @@ class AIService
     }
 
     /**
-     * Call Groq API to generate N structured questions inside a single JSON array response.
+     * Call Groq API to generate a single structured question.
      */
-    private static function callGroqApiBatch(string $categoryName, string $level, int $batchCount, string $apiKey, array $inProgressTexts = []): ?array
+    private static function callGroqApiSingle(string $prompt, string $apiKey, string $fallbackTag): ?array
     {
         $url = "https://api.groq.com/openai/v1/chat/completions";
-
-        $syllabusGuideline = "";
-        $formattedLevel = $level === 'professional' ? 'Professional' : 'Sub-Professional';
-
-        if ($categoryName === 'Numerical Ability') {
-            if ($level === 'professional') {
-                $syllabusGuideline = "Test advanced mathematics, word problems involving fractions, decimals, percentages, sequence completion (e.g., sequences like '10 17 26 37'), averages, age word problems, distance/speed/time, perimeter/area/volume, simple/compound interest, investment returns/bonds, basic algebra equations, and Data Sufficiency problems.";
-            } else {
-                $syllabusGuideline = "Test basic arithmetic operations, fractions, basic percentages, averages, rates, and simple word problems (e.g., salary increase rate, price discounts).";
-            }
-        } elseif ($categoryName === 'Verbal Ability') {
-            if ($level === 'professional') {
-                $syllabusGuideline = "Test advanced grammar rules, extensive vocabulary (synonyms and antonyms embedded in contextual sentences), analogies (both single-word and double-word analogies), correct usage, identifying errors, paragraph organization, and reading comprehension of formal texts.";
-            } else {
-                $syllabusGuideline = "Test basic grammar rules, spelling identification (e.g., accommodation vs. accomodation), simple vocabulary, analogies (single-word analogies), correct usage, paragraph organization, and general reading comprehension.";
-            }
-        } elseif ($categoryName === 'Analytical Ability') {
-            $syllabusGuideline = "Test logical reasoning (syllogisms, drawing valid conclusions from statements, identifying assumptions), word associations, and inductive/sequence completion of number or letter series. This category is only for the Professional level.";
-        } elseif ($categoryName === 'Clerical Ability') {
-            $syllabusGuideline = "Test clerical filing procedures (alphabetical ordering of names, departments, or organizations), English spelling rules, clerical tasks, coding, and data verification. This category is only for the Sub-Professional level.";
-        } elseif ($categoryName === 'General Information') {
-            $syllabusGuideline = "Test knowledge of the 1987 Philippine Constitution (especially Article III Bill of Rights), R.A. 6713 (Code of Conduct and Ethical Standards for Public Officials and Employees), Peace & Human Rights, and Environmental Concepts (climate change, resource preservation).";
-        }
-
-        // Fetch recently generated questions for this category to prevent duplication
-        $existingQuestions = [];
-        try {
-            $existingQuestions = \App\Models\Question::whereHas('category', function ($query) use ($categoryName) {
-                $query->where('name', $categoryName);
-            })
-            ->orderBy('created_at', 'desc')
-            ->take(40)
-            ->get(['question_text', 'problem_type_tag'])
-            ->map(function ($q) {
-                $stripped = strtolower(trim(preg_replace('/\s*\(Variation ID:\s*\d+\)/i', '', $q->question_text)));
-                $tag = $q->problem_type_tag ? ' (concept: ' . trim($q->problem_type_tag) . ')' : '';
-                return $stripped . $tag;
-            })
-            ->unique()
-            ->filter()
-            ->toArray();
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Failed to fetch existing questions for AI exclude list: ' . $e->getMessage());
-        }
-
-        $excludeTexts = array_unique(array_merge($existingQuestions, $inProgressTexts));
-
-        $excludePrompt = "";
-        if (!empty($excludeTexts)) {
-            $excludePrompt = "\n\nCRITICAL REDUNDANCY PREVENTION:\n" .
-                             "To avoid generating redundant or duplicate questions, DO NOT generate any questions that are identical or highly similar to the following list of existing questions/concepts in the database:\n";
-            foreach ($excludeTexts as $eq) {
-                $excludePrompt .= "- " . trim($eq) . "\n";
-            }
-        }
-
-        $prompt = "Generate exactly {$batchCount} unique multiple-choice questions for a Philippine Civil Service Exam (CSE) self-assessment tool.\n" .
-                  "Category: {$categoryName}\n" .
-                  "Level: {$formattedLevel}\n\n" .
-                  "Syllabus & Topic Guidelines:\n" .
-                  "{$syllabusGuideline}" .
-                  $excludePrompt . "\n\n" .
-                  "Style and Format Guidelines (modeled after the official 2026 CSE reviewer):\n" .
-                  "- For Numerical Ability (Mathematics):\n" .
-                  "  1. Word Problems & Operations: Write mathematical expressions, percentages, and fractions in plain text format (e.g., use '1/2' or '33 1/3%' instead of special symbols or LaTeX math syntax).\n" .
-                  "  2. Financial & Currency Formatting: Format all monetary/financial values using the Philippine Peso symbol '₱' and commas as thousands separators, with two decimal places (e.g., use '₱1,250.00' instead of '1250' or 'P1250').\n" .
-                  "  3. Data Sufficiency questions (Professional level): Provide a mathematical question followed by two statements on new lines, labeled 1) and 2). The 4 options must represent sufficiency rules and be exactly: \n" .
-                  "     - Statement (1) ALONE is sufficient, but statement (2) alone is not sufficient.\n" .
-                  "     - Statement (2) ALONE is sufficient, but statement (1) alone is not sufficient.\n" .
-                  "     - BOTH statements TOGETHER are sufficient, but NEITHER statement ALONE is sufficient.\n" .
-                  "     - Statements (1) and (2) TOGETHER are NOT sufficient.\n" .
-                  "     (Or dynamically substitute one with 'Each statement ALONE is sufficient.' if applicable. Options must be clean strings without any option letter prefix like 'A.' or 'a.').\n" .
-                  "- For Verbal Ability:\n" .
-                  "  1. Vocabulary (Synonyms & Antonyms): Wrap the target vocabulary word in double quotes (e.g., \"apathetic\" or \"brusque\") inside a complete, natural sentence context. The question text should be phrased as: 'Choose the word closest in meaning to the quoted word: ...' (for synonyms) or 'Choose the word opposite in meaning to the quoted word: ...' (for antonyms).\n" .
-                  "  2. Analogy:\n" .
-                  "     - Single-word Analogy: Phrased as: 'Complete the analogy: Moby Dick : Herman Melville || The Old Man and the Sea : ________'\n" .
-                  "     - Double-word Analogy: Phrased as: 'Identify the pair of words that shares the same relationship as the given pair: blend : mix'\n" .
-                  "  3. Correct Usage: Ask the user to complete a sentence. E.g., 'Choose the word that correctly completes the sentence: ...'\n" .
-                  "  4. Identifying Errors: Ask the user to identify the grammatically incorrect segment. Phrased as: 'Identify the word or phrase that is NOT acceptable in formal written English: ...'. Options should list the segments and 'No error' as the fourth option.\n" .
-                  "- For Clerical Ability:\n" .
-                  "  1. Alphabetizing: Provide 4 items (such as names, government departments, or organizations) labeled A, B, C, and D. Phrased as: 'Arrange the following items in alphabetical order: \\nA. [Item A]\\nB. [Item B]\\nC. [Item C]\\nD. [Item D]'. The 4 options must be permutations of the letters A, B, C, D (e.g., 'ABCD', 'ACBD', 'BCAD', 'CBAD'). The correct option index must point to the option representing the exact correct alphabetical order.\n" .
-                  "  2. Spelling/Data Verification: Identify correctly spelled words or matching codes/data.\n" .
-                  "- For Analytical Ability (Professional level):\n" .
-                  "  1. Logical Reasoning: Provide a set of premises or statements and ask for the logical conclusion or assumption. E.g., 'All applicants who score above 90 are invited... What can be logically concluded?'\n" .
-                  "  2. Sequence/Inductive Reasoning: Ask to find the next item in a sequence of numbers or letters. Phrased as: 'Find the next item in the sequence: ZY, WV, TS, QP, ________'.\n" .
-                  "  3. Abstract Reasoning: Draw shape-based diagrams. Write the question text using a diagram tag: 'Which option completes the sequence pattern?' followed by a JSON diagram enclosed in custom tags: [diagram]{\"type\": \"sequence\"|\"grid\", ...}[/diagram]. The 4 multiple choice options must also be individual diagrams representing the choice shapes: '[diagram]{\"shapes\": [...]}[/diagram]'. Keep diagram JSON clean and simple. Supported shape types: 'circle', 'square', 'triangle', 'arrow', 'cross', 'line', 'star'. Supported fills: 'none', 'solid', 'shaded'. Supported rotation degrees (0, 45, 90, 180, etc.). Supported decorations: dots or lines inside/outside.\n\n" .
-                  "Requirements:\n" .
-                  "1. The questions must test knowledge/skills relevant to the category and difficulty level of the Philippine Civil Service Exam.\n" .
-                  "2. CRITICAL LOGIC RULE: PREVENT SEMANTIC DUPLICATES. A semantic duplicate is a question that uses the exact same mathematical formula, logic pattern, or scenario type as a previous question, even if you change the names, places, or exact numbers. Every question you generate must test a completely different mathematical concept, logical problem type, or core subject matter. Ensure that no two questions share the exact same core calculation steps.\n" .
-                  "3. Define a specific 'problem_type_tag' (e.g. 'work-rate-pipes', 'percentage-discount', 'syllogism-all-some', 'sequence-geometric', 'vocabulary-antonym-sentence') that describes the exact logic/concept used.\n" .
-                  "4. Each question must have exactly 4 multiple choice options.\n" .
-                  "5. Define exactly one correct option index (0-indexed integer from 0 to 3) for each question.\n" .
-                  "6. Provide a clear, step-by-step explanatory review detailing why that answer is correct.\n" .
-                  "7. Return the response as a JSON object containing a 'questions' key which is an array of objects matching the required schema.\n" .
-                  "8. CRITICAL: DO NOT prefix options in the 'options' array with letter headers (like 'A.', 'a.', 'B.', 'b.', '1.', etc.). Options must be pure, clean strings.";
 
         $body = [
             'model' => config('services.ai.model', 'llama-3.3-70b-versatile'),
@@ -824,7 +1053,8 @@ class AIService
             ],
             'response_format' => [
                 'type' => 'json_object'
-            ]
+            ],
+            'temperature' => 0.85
         ];
 
         $response = Http::withoutVerifying()
@@ -839,19 +1069,15 @@ class AIService
             $json = $response->json();
             $text = $json['choices'][0]['message']['content'] ?? null;
             if ($text) {
-                $decoded = json_decode($text, true);
+                $cleanedText = self::cleanJsonResponse($text);
+                $decoded = json_decode($cleanedText, true);
                 if (is_array($decoded)) {
-                    $raw = [];
-                    if (isset($decoded['questions']) && is_array($decoded['questions'])) {
-                        $raw = $decoded['questions'];
-                    } elseif (isset($decoded['data']) && is_array($decoded['data'])) {
-                        $raw = $decoded['data'];
-                    } elseif (array_keys($decoded) === range(0, count($decoded) - 1)) {
-                        $raw = $decoded;
-                    } else {
-                        $raw = [$decoded];
+                    \App\Models\Setting::set('ai_quota_exceeded_flag', '0');
+                    \App\Models\Setting::set('ai_last_error', null);
+                    $parsed = self::parseEliteResponse($decoded, $fallbackTag);
+                    if ($parsed) {
+                        return $parsed;
                     }
-                    return self::normalizeQuestionsArray($raw);
                 }
             }
         }

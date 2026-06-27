@@ -9,6 +9,7 @@ class Question extends Model
 {
     protected $fillable = [
         'exam_category_id',
+        'reference_question_id',
         'question_text',
         'explanation',
         'audit_status',
@@ -55,6 +56,11 @@ class Question extends Model
     public function category()
     {
         return $this->belongsTo(ExamCategory::class, 'exam_category_id');
+    }
+
+    public function referenceQuestion()
+    {
+        return $this->belongsTo(ReferenceQuestion::class, 'reference_question_id');
     }
 
     public function options()

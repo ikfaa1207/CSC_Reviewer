@@ -38,12 +38,12 @@ class AdminQuestionController extends Controller
     {
         $this->authorizeAdmin();
 
-        $search      = $request->input('search', '');
-        $categoryId  = $request->input('category_id', '');
-        $sort        = $request->input('sort', 'newest');
-        $filter      = $request->input('filter', 'all');
-        $perPage     = (int) $request->input('per_page', 50);
-        $perPage     = in_array($perPage, [25, 50, 100]) ? $perPage : 50;
+        $search = $request->input('search', '');
+        $categoryId = $request->input('category_id', '');
+        $sort = $request->input('sort', 'newest');
+        $filter = $request->input('filter', 'all');
+        $perPage = (int) $request->input('per_page', 50);
+        $perPage = in_array($perPage, [25, 50, 100]) ? $perPage : 50;
 
         // ── Build base query ──────────────────────────────────────────────────
         $query = Question::with(['category', 'options']);
@@ -94,13 +94,13 @@ class AdminQuestionController extends Controller
                 break;
             case 'category_asc':
                 $query->join('exam_categories', 'questions.exam_category_id', '=', 'exam_categories.id')
-                      ->orderBy('exam_categories.name', 'asc')
-                      ->select('questions.*');
+                    ->orderBy('exam_categories.name', 'asc')
+                    ->select('questions.*');
                 break;
             case 'category_desc':
                 $query->join('exam_categories', 'questions.exam_category_id', '=', 'exam_categories.id')
-                      ->orderBy('exam_categories.name', 'desc')
-                      ->select('questions.*');
+                    ->orderBy('exam_categories.name', 'desc')
+                    ->select('questions.*');
                 break;
             case 'duplicates_first':
                 // Bring rows whose hash appears > 1 to the top
@@ -116,7 +116,7 @@ class AdminQuestionController extends Controller
                 break;
             case 'flagged_first':
                 $query->orderByRaw("CASE WHEN audit_status IS NOT NULL AND audit_status != 'passed' THEN 0 ELSE 1 END")
-                      ->orderBy('created_at', 'desc');
+                    ->orderBy('created_at', 'desc');
                 break;
             default: // newest
                 $query->orderBy('created_at', 'desc');
@@ -131,26 +131,26 @@ class AdminQuestionController extends Controller
         });
 
         // ── Summary counts (global, not filtered) ─────────────────────────────
-        $totalCount           = Question::count();
-        $duplicateCount       = Question::whereIn('question_hash', array_keys($dupHashSet))->count();
-        $auditIssuesCount     = Question::whereNotNull('audit_status')
-                                        ->where('audit_status', '!=', 'passed')
-                                        ->count();
+        $totalCount = Question::count();
+        $duplicateCount = Question::whereIn('question_hash', array_keys($dupHashSet))->count();
+        $auditIssuesCount = Question::whereNotNull('audit_status')
+            ->where('audit_status', '!=', 'passed')
+            ->count();
 
         $categories = ExamCategory::all();
 
         return Inertia::render('Admin/Questions', [
-            'questions'        => $paginated,
-            'categories'       => $categories,
-            'totalCount'       => $totalCount,
-            'duplicateCount'   => $duplicateCount,
+            'questions' => $paginated,
+            'categories' => $categories,
+            'totalCount' => $totalCount,
+            'duplicateCount' => $duplicateCount,
             'auditIssuesCount' => $auditIssuesCount,
-            'filters'          => [
-                'search'      => $search,
+            'filters' => [
+                'search' => $search,
                 'category_id' => $categoryId,
-                'sort'        => $sort,
-                'filter'      => $filter,
-                'per_page'    => $perPage,
+                'sort' => $sort,
+                'filter' => $filter,
+                'per_page' => $perPage,
             ],
         ]);
     }
@@ -164,16 +164,19 @@ class AdminQuestionController extends Controller
 
         $request->validate([
             'exam_category_id' => 'required|exists:exam_categories,id',
-            'question_text'    => 'required|string',
-            'explanation'      => 'nullable|string',
-            'options'          => 'required|array|min:2',
+            'question_text' => 'required|string',
+            'explanation' => 'nullable|string',
+            'options' => 'required|array|min:2',
             'options.*.option_text' => 'required|string',
-            'options.*.is_correct'  => 'required|boolean',
+            'options.*.is_correct' => 'required|boolean',
         ]);
 
         $hasCorrect = false;
         foreach ($request->options as $opt) {
-            if ($opt['is_correct']) { $hasCorrect = true; break; }
+            if ($opt['is_correct']) {
+                $hasCorrect = true;
+                break;
+            }
         }
 
         if (!$hasCorrect) {
@@ -183,15 +186,15 @@ class AdminQuestionController extends Controller
         DB::transaction(function () use ($request) {
             $question = Question::create([
                 'exam_category_id' => $request->exam_category_id,
-                'question_text'    => $request->question_text,
-                'explanation'      => $request->explanation,
+                'question_text' => $request->question_text,
+                'explanation' => $request->explanation,
             ]);
 
             foreach ($request->options as $opt) {
                 QuestionOption::create([
                     'question_id' => $question->id,
                     'option_text' => $opt['option_text'],
-                    'is_correct'  => $opt['is_correct'],
+                    'is_correct' => $opt['is_correct'],
                 ]);
             }
         });
@@ -208,16 +211,19 @@ class AdminQuestionController extends Controller
 
         $request->validate([
             'exam_category_id' => 'required|exists:exam_categories,id',
-            'question_text'    => 'required|string',
-            'explanation'      => 'nullable|string',
-            'options'          => 'required|array|min:2',
+            'question_text' => 'required|string',
+            'explanation' => 'nullable|string',
+            'options' => 'required|array|min:2',
             'options.*.option_text' => 'required|string',
-            'options.*.is_correct'  => 'required|boolean',
+            'options.*.is_correct' => 'required|boolean',
         ]);
 
         $hasCorrect = false;
         foreach ($request->options as $opt) {
-            if ($opt['is_correct']) { $hasCorrect = true; break; }
+            if ($opt['is_correct']) {
+                $hasCorrect = true;
+                break;
+            }
         }
 
         if (!$hasCorrect) {
@@ -227,10 +233,10 @@ class AdminQuestionController extends Controller
         DB::transaction(function () use ($request, $question) {
             $question->update([
                 'exam_category_id' => $request->exam_category_id,
-                'question_text'    => $request->question_text,
-                'explanation'      => $request->explanation,
-                'audit_status'     => 'passed',
-                'audit_error'      => null,
+                'question_text' => $request->question_text,
+                'explanation' => $request->explanation,
+                'audit_status' => 'passed',
+                'audit_error' => null,
             ]);
 
             $question->options()->delete();
@@ -239,7 +245,7 @@ class AdminQuestionController extends Controller
                 QuestionOption::create([
                     'question_id' => $question->id,
                     'option_text' => $opt['option_text'],
-                    'is_correct'  => $opt['is_correct'],
+                    'is_correct' => $opt['is_correct'],
                 ]);
             }
         });
@@ -272,11 +278,11 @@ class AdminQuestionController extends Controller
 
         $request->validate([
             'exam_category_id' => 'required',
-            'level'            => 'required|in:professional,sub_professional',
-            'count'            => 'required|integer|in:1,5,10,15,20,30,40,50,150',
-            'chunk_index'      => 'sometimes|integer|min:0',
-            'chunk_size'       => 'sometimes|integer|min:1|max:10',
-            'sync'            => 'sometimes|boolean', // Force synchronous execution
+            'level' => 'required|in:professional,sub_professional',
+            'count' => 'required|integer|in:1,5,10,15,20,30,40,50,150',
+            'chunk_index' => 'sometimes|integer|min:0',
+            'chunk_size' => 'sometimes|integer|min:1|max:10',
+            'sync' => 'sometimes|boolean', // Force synchronous execution
         ]);
 
         // Check if we should run synchronously (for testing or small batches)
@@ -325,8 +331,8 @@ class AdminQuestionController extends Controller
         set_time_limit(0);
         ini_set('max_execution_time', 0);
 
-        $chunkSize   = (int) $request->input('chunk_size', 5);
-        $chunkIndex  = (int) $request->input('chunk_index', 0);
+        $chunkSize = (int) $request->input('chunk_size', 5);
+        $chunkIndex = (int) $request->input('chunk_index', 0);
 
         // In chunk mode, each call generates only chunk_size questions
         $targetCount = $chunkSize;
@@ -340,8 +346,8 @@ class AdminQuestionController extends Controller
         }
 
         $categoryCount = $categories->count();
-        $baseCount     = (int) ($targetCount / $categoryCount);
-        $remainder     = $targetCount % $categoryCount;
+        $baseCount = (int) ($targetCount / $categoryCount);
+        $remainder = $targetCount % $categoryCount;
 
         $distributions = [];
         foreach ($categories as $index => $cat) {
@@ -351,26 +357,27 @@ class AdminQuestionController extends Controller
             }
         }
 
-        $totalSavedCount   = 0;
+        $totalSavedCount = 0;
         $totalSkippedCount = 0;
 
         foreach ($distributions as $dist) {
-            $category        = $dist['category'];
-            $catTargetCount  = $dist['count'];
+            $category = $dist['category'];
+            $catTargetCount = $dist['count'];
 
-            $savedCount    = 0;
-            $totalSkipped  = 0;
-            $maxAttempts   = 3;
+            $savedCount = 0;
+            $totalSkipped = 0;
+            $maxAttempts = 3;
             $discardedTexts = [];
 
             for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
                 $remaining = $catTargetCount - $savedCount;
-                if ($remaining <= 0) break;
+                if ($remaining <= 0)
+                    break;
 
                 if (app()->environment('testing')) {
                     $seedOffset = ($chunkIndex * $catTargetCount) + ($attempt * $catTargetCount);
                 } else {
-                    $seedOffset = (int)(microtime(true) * 1000) % 1000000 + rand(1000, 9999) + ($attempt * 100) + ($chunkIndex * 1000);
+                    $seedOffset = (int) (microtime(true) * 1000) % 1000000 + rand(1000, 9999) + ($attempt * 100) + ($chunkIndex * 1000);
                 }
 
                 // Use the new AIService
@@ -389,7 +396,8 @@ class AdminQuestionController extends Controller
                         $parts = explode('-', strtolower($q['problem_type_tag']));
                         foreach ($parts as $part) {
                             $part = trim($part);
-                            if (strlen($part) > 2) $keywords[] = $part;
+                            if (strlen($part) > 2)
+                                $keywords[] = $part;
                         }
                     }
                 }
@@ -414,23 +422,23 @@ class AdminQuestionController extends Controller
                 DB::transaction(function () use ($verifiedQuestions, $category, &$totalSkipped, &$savedCount, &$seenInBatch, &$discardedTexts) {
                     foreach ($verifiedQuestions as $generated) {
                         // Handle both array and GeneratedQuestionData
-                        $questionText = $generated instanceof \App\DTOs\GeneratedQuestionData 
-                            ? $generated->question_text 
+                        $questionText = $generated instanceof \App\DTOs\GeneratedQuestionData
+                            ? $generated->question_text
                             : ($generated['question_text'] ?? '');
-                        $options = $generated instanceof \App\DTOs\GeneratedQuestionData 
-                            ? $generated->options 
+                        $options = $generated instanceof \App\DTOs\GeneratedQuestionData
+                            ? $generated->options
                             : ($generated['options'] ?? []);
-                        $correctOptionIndex = $generated instanceof \App\DTOs\GeneratedQuestionData 
-                            ? $generated->correct_option_index 
+                        $correctOptionIndex = $generated instanceof \App\DTOs\GeneratedQuestionData
+                            ? $generated->correct_option_index
                             : ($generated['correct_option_index'] ?? 0);
-                        $explanation = $generated instanceof \App\DTOs\GeneratedQuestionData 
-                            ? $generated->explanation 
+                        $explanation = $generated instanceof \App\DTOs\GeneratedQuestionData
+                            ? $generated->explanation
                             : ($generated['explanation'] ?? null);
-                        $problemTypeTag = $generated instanceof \App\DTOs\GeneratedQuestionData 
-                            ? $generated->problem_type_tag 
+                        $problemTypeTag = $generated instanceof \App\DTOs\GeneratedQuestionData
+                            ? $generated->problem_type_tag
                             : ($generated['problem_type_tag'] ?? null);
-                        $isValid = $generated instanceof \App\DTOs\GeneratedQuestionData 
-                            ? $generated->is_valid 
+                        $isValid = $generated instanceof \App\DTOs\GeneratedQuestionData
+                            ? $generated->is_valid
                             : ($generated['is_valid'] ?? true);
 
                         if (!$isValid) {
@@ -472,17 +480,17 @@ class AdminQuestionController extends Controller
 
                         $question = Question::create([
                             'exam_category_id' => $category->id,
-                            'question_text'    => $questionText,
-                            'explanation'      => $explanation,
-                            'audit_status'     => 'passed',
-                            'problem_type_tag' => $problemTypeTag,
+                            'question_text' => $generated['question_text'],
+                            'explanation' => $generated['explanation'] ?? null,
+                            'audit_status' => 'passed',
+                            'problem_type_tag' => $generated['problem_type_tag'] ?? null,
                         ]);
 
                         foreach ($options as $idx => $optText) {
                             QuestionOption::create([
                                 'question_id' => $question->id,
                                 'option_text' => $optText,
-                                'is_correct'  => $idx === (int)$correctOptionIndex,
+                                'is_correct' => $idx === (int) $correctOptionIndex,
                             ]);
                         }
                         $savedCount++;
@@ -490,7 +498,7 @@ class AdminQuestionController extends Controller
                 });
             }
 
-            $totalSavedCount   += $savedCount;
+            $totalSavedCount += $savedCount;
             $totalSkippedCount += $totalSkipped;
         }
 
@@ -498,10 +506,10 @@ class AdminQuestionController extends Controller
         $structuralErrors = $this->runStructuralAuditOnly();
 
         return response()->json([
-            'saved'            => $totalSavedCount,
-            'skipped'          => $totalSkippedCount,
+            'saved' => $totalSavedCount,
+            'skipped' => $totalSkippedCount,
             'structuralErrors' => $structuralErrors,
-            'done'             => true,
+            'done' => true,
         ]);
     }
 
@@ -526,7 +534,7 @@ class AdminQuestionController extends Controller
             if ($optionsCount !== 4) {
                 $question->update([
                     'audit_status' => 'failed_structure',
-                    'audit_error'  => "Has {$optionsCount} options (expected 4)",
+                    'audit_error' => "Has {$optionsCount} options (expected 4)",
                 ]);
                 $structuralCount++;
                 continue;
@@ -535,7 +543,7 @@ class AdminQuestionController extends Controller
             if ($correctCount !== 1) {
                 $question->update([
                     'audit_status' => 'failed_structure',
-                    'audit_error'  => $correctCount === 0 ? 'No correct option marked' : "Multiple correct options ({$correctCount}) marked",
+                    'audit_error' => $correctCount === 0 ? 'No correct option marked' : "Multiple correct options ({$correctCount}) marked",
                 ]);
                 $structuralCount++;
                 continue;
@@ -545,7 +553,7 @@ class AdminQuestionController extends Controller
             if ($question->audit_status === 'failed_structure') {
                 $question->update([
                     'audit_status' => 'passed',
-                    'audit_error'  => null,
+                    'audit_error' => null,
                 ]);
             }
         }
@@ -707,8 +715,8 @@ class AdminQuestionController extends Controller
         $apiKey = config('services.ai.key');
 
         $structuralCount = 0;
-        $factualCount    = 0;
-        $passedCount     = 0;
+        $factualCount = 0;
+        $passedCount = 0;
 
         $questionsToAuditFactual = [];
 
@@ -719,7 +727,7 @@ class AdminQuestionController extends Controller
             if ($optionsCount !== 4) {
                 $question->update([
                     'audit_status' => 'failed_structure',
-                    'audit_error'  => "Has {$optionsCount} options (expected 4)",
+                    'audit_error' => "Has {$optionsCount} options (expected 4)",
                 ]);
                 $structuralCount++;
                 continue;
@@ -728,19 +736,19 @@ class AdminQuestionController extends Controller
             if ($correctCount !== 1) {
                 $question->update([
                     'audit_status' => 'failed_structure',
-                    'audit_error'  => $correctCount === 0 ? 'No correct option marked' : "Multiple correct options ({$correctCount}) marked",
+                    'audit_error' => $correctCount === 0 ? 'No correct option marked' : "Multiple correct options ({$correctCount}) marked",
                 ]);
                 $structuralCount++;
                 continue;
             }
 
             $correctOptionText = $question->options->where('is_correct', true)->first()->option_text;
-            $optionsText       = $question->options->pluck('option_text')->toArray();
+            $optionsText = $question->options->pluck('option_text')->toArray();
 
             $questionsToAuditFactual[] = [
-                'id'             => $question->id,
-                'question_text'  => $question->question_text,
-                'options'        => $optionsText,
+                'id' => $question->id,
+                'question_text' => $question->question_text,
+                'options' => $optionsText,
                 'correct_option' => $correctOptionText,
             ];
         }
@@ -760,7 +768,7 @@ class AdminQuestionController extends Controller
                             } else {
                                 $q->update([
                                     'audit_status' => 'failed_facts',
-                                    'audit_error'  => $res['error_reason'] ?? 'Factual/content correctness check failed.',
+                                    'audit_error' => $res['error_reason'] ?? 'Factual/content correctness check failed.',
                                 ]);
                                 $factualCount++;
                             }
@@ -816,7 +824,7 @@ class AdminQuestionController extends Controller
         }
 
         $fixedCount = 0;
-        $chunks     = $flaggedQuestions->chunk(5);
+        $chunks = $flaggedQuestions->chunk(5);
 
         foreach ($chunks as $chunk) {
             $questionsData = [];
@@ -826,11 +834,11 @@ class AdminQuestionController extends Controller
                     $optionsText[] = "[{$idx}] {$opt->option_text} (Correct: " . ($opt->is_correct ? 'true' : 'false') . ")";
                 }
                 $questionsData[] = [
-                    'id'            => $q->id,
+                    'id' => $q->id,
                     'question_text' => $q->question_text,
-                    'options'       => $optionsText,
-                    'explanation'   => $q->explanation,
-                    'audit_error'   => $q->audit_error,
+                    'options' => $optionsText,
+                    'explanation' => $q->explanation,
+                    'audit_error' => $q->audit_error,
                 ];
             }
 
@@ -845,9 +853,9 @@ class AdminQuestionController extends Controller
                             DB::transaction(function () use ($originalQuestion, $corrected, &$fixedCount) {
                                 $originalQuestion->update([
                                     'question_text' => $corrected['question_text'],
-                                    'explanation'   => $corrected['explanation'] ?? null,
-                                    'audit_status'  => 'passed',
-                                    'audit_error'   => null,
+                                    'explanation' => $corrected['explanation'] ?? null,
+                                    'audit_status' => 'passed',
+                                    'audit_error' => null,
                                     'problem_type_tag' => $corrected['problem_type_tag'] ?? $originalQuestion->problem_type_tag,
                                 ]);
 
@@ -857,7 +865,7 @@ class AdminQuestionController extends Controller
                                     QuestionOption::create([
                                         'question_id' => $originalQuestion->id,
                                         'option_text' => $optText,
-                                        'is_correct'  => $idx === (int)$corrected['correct_option_index'],
+                                        'is_correct' => $idx === (int) $corrected['correct_option_index'],
                                     ]);
                                 }
 
@@ -894,24 +902,24 @@ class AdminQuestionController extends Controller
             $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
 
             $prompt = "You are an independent quality auditor for the Philippine Civil Service Exam (CSE).\n" .
-                      "Verify the factual correctness of the following multiple-choice questions.\n" .
-                      "For each question, check if the marked correct option is actually correct. If the question is correct, set `is_valid` to true.\n" .
-                      "If the correct option is incorrect, or if the question is faulty/confusing, set `is_valid` to false and provide a short reason in `error_reason`.\n\n" .
-                      "Questions:\n" .
-                      json_encode($questionsToAudit, JSON_PRETTY_PRINT) . "\n\n" .
-                      "Return a JSON array of objects with keys: 'id', 'is_valid', 'error_reason'.";
+                "Verify the factual correctness of the following multiple-choice questions.\n" .
+                "For each question, check if the marked correct option is actually correct. If the question is correct, set `is_valid` to true.\n" .
+                "If the correct option is incorrect, or if the question is faulty/confusing, set `is_valid` to false and provide a short reason in `error_reason`.\n\n" .
+                "Questions:\n" .
+                json_encode($questionsToAudit, JSON_PRETTY_PRINT) . "\n\n" .
+                "Return a JSON array of objects with keys: 'id', 'is_valid', 'error_reason'.";
 
             $body = [
-                'contents'         => [['parts' => [['text' => $prompt]]]],
+                'contents' => [['parts' => [['text' => $prompt]]]],
                 'generationConfig' => [
                     'responseMimeType' => 'application/json',
-                    'responseSchema'   => [
-                        'type'  => 'ARRAY',
+                    'responseSchema' => [
+                        'type' => 'ARRAY',
                         'items' => [
-                            'type'       => 'OBJECT',
+                            'type' => 'OBJECT',
                             'properties' => [
-                                'id'           => ['type' => 'INTEGER'],
-                                'is_valid'     => ['type' => 'BOOLEAN'],
+                                'id' => ['type' => 'INTEGER'],
+                                'is_valid' => ['type' => 'BOOLEAN'],
                                 'error_reason' => ['type' => 'STRING'],
                             ],
                             'required' => ['id', 'is_valid'],
@@ -927,7 +935,8 @@ class AdminQuestionController extends Controller
             if ($response->successful()) {
                 $json = $response->json();
                 $text = $json['candidates'][0]['content']['parts'][0]['text'] ?? null;
-                if ($text) return json_decode($text, true) ?? [];
+                if ($text)
+                    return json_decode($text, true) ?? [];
             }
 
             if ($response->failed()) {
@@ -949,22 +958,22 @@ class AdminQuestionController extends Controller
             $url = "https://api.groq.com/openai/v1/chat/completions";
 
             $prompt = "You are an independent quality auditor for the Philippine Civil Service Exam (CSE).\n" .
-                      "Verify the factual correctness of the following multiple-choice questions.\n" .
-                      "For each question, check if the marked correct option is actually correct. If the question is correct, set `is_valid` to true.\n" .
-                      "If the correct option is incorrect, or if the question is faulty/confusing, set `is_valid` to false and provide a short reason in `error_reason`.\n\n" .
-                      "Questions:\n" .
-                      json_encode($questionsToAudit, JSON_PRETTY_PRINT) . "\n\n" .
-                      "Return a JSON object containing a 'results' key which is a JSON array of objects with keys: 'id', 'is_valid', 'error_reason'.";
+                "Verify the factual correctness of the following multiple-choice questions.\n" .
+                "For each question, check if the marked correct option is actually correct. If the question is correct, set `is_valid` to true.\n" .
+                "If the correct option is incorrect, or if the question is faulty/confusing, set `is_valid` to false and provide a short reason in `error_reason`.\n\n" .
+                "Questions:\n" .
+                json_encode($questionsToAudit, JSON_PRETTY_PRINT) . "\n\n" .
+                "Return a JSON object containing a 'results' key which is a JSON array of objects with keys: 'id', 'is_valid', 'error_reason'.";
 
             $body = [
-                'model'           => config('services.ai.model', 'llama-3.3-70b-versatile'),
-                'messages'        => [['role' => 'user', 'content' => $prompt]],
+                'model' => config('services.ai.model', 'llama-3.3-70b-versatile'),
+                'messages' => [['role' => 'user', 'content' => $prompt]],
                 'response_format' => ['type' => 'json_object'],
             ];
 
             $response = Http::withoutVerifying()->timeout(120)
                 ->withHeaders([
-                    'Content-Type'  => 'application/json',
+                    'Content-Type' => 'application/json',
                     'Authorization' => 'Bearer ' . $apiKey,
                 ])
                 ->post($url, $body);
@@ -975,8 +984,10 @@ class AdminQuestionController extends Controller
                 if ($text) {
                     $decoded = json_decode($text, true);
                     if (is_array($decoded)) {
-                        if (isset($decoded['results']) && is_array($decoded['results']))   return $decoded['results'];
-                        if (isset($decoded['questions']) && is_array($decoded['questions'])) return $decoded['questions'];
+                        if (isset($decoded['results']) && is_array($decoded['results']))
+                            return $decoded['results'];
+                        if (isset($decoded['questions']) && is_array($decoded['questions']))
+                            return $decoded['questions'];
                     }
                 }
             }
@@ -999,7 +1010,7 @@ class AdminQuestionController extends Controller
         $this->authorizeAdmin();
 
         $request->validate([
-            'ids'   => 'required|array',
+            'ids' => 'required|array',
             'ids.*' => 'required|exists:questions,id',
         ]);
 
@@ -1017,7 +1028,7 @@ class AdminQuestionController extends Controller
         $this->authorizeAdmin();
 
         $question->load('options');
-        
+
         // For now, return a mock suggestion
         // In a full implementation, this would call the AI API
         $suggested = [
