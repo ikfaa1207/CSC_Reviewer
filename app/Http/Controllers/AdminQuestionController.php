@@ -394,11 +394,12 @@ class AdminQuestionController extends Controller
                         $seenInBatch[] = $hash;
 
                         $question = Question::create([
-                            'exam_category_id' => $category->id,
-                            'question_text'    => $generated['question_text'],
-                            'explanation'      => $generated['explanation'] ?? null,
-                            'audit_status'     => 'passed',
-                            'problem_type_tag' => $generated['problem_type_tag'] ?? null,
+                            'exam_category_id'      => $category->id,
+                            'reference_question_id' => $generated['reference_question_id'] ?? null,
+                            'question_text'         => $generated['question_text'],
+                            'explanation'           => $generated['explanation'] ?? null,
+                            'audit_status'          => 'passed',
+                            'problem_type_tag'      => $generated['problem_type_tag'] ?? null,
                         ]);
 
                         foreach ($generated['options'] as $idx => $optText) {
